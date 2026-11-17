@@ -64,7 +64,7 @@ final class Brevo {
 	 * @return array<string,mixed>
 	 */
 	public static function campaign_payload( array $issue, array $options, ?string $scheduled_at = null ): array {
-		$payload  = [
+		$payload = [
 			'name'         => (string) $issue['name'],
 			'subject'      => (string) $issue['subject'],
 			'previewText'  => (string) ( $issue['preview_text'] ?? '' ),
@@ -75,6 +75,12 @@ final class Brevo {
 			'htmlContent'  => (string) $issue['html'],
 			'recipients'   => [ 'listIds' => [ (int) $options['list_id'] ] ],
 			'mirrorActive' => true,
+			// Without these Brevo adds its account default header ("If you are not
+			// able to see this mail, click here") and footer around our HTML. It
+			// rejects an empty value, so send an HTML comment. Our template has its
+			// own view-in-browser and unsubscribe links.
+			'header'       => '<!-- -->',
+			'footer'       => '<!-- -->',
 			'utmCampaign'  => 'riviantrackr-weekly',
 		];
 		$reply_to = (string) ( $options['reply_to'] ?? '' );
