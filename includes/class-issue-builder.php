@@ -199,7 +199,15 @@ final class IssueBuilder {
 		if ( mb_strlen( $text ) <= $max ) {
 			return $text;
 		}
-		$cut   = mb_substr( $text, 0, $max );
+		$cut = mb_substr( $text, 0, $max );
+		// Prefer ending on a full sentence when one ends past the halfway mark.
+		if ( preg_match_all( '/[.!?](?=\s|$)/u', $cut, $m, PREG_OFFSET_CAPTURE ) ) {
+			$last = end( $m[0] );
+			$pos  = mb_strlen( substr( $cut, 0, (int) $last[1] ) ) + 1;
+			if ( $pos >= $max * 0.5 ) {
+				return mb_substr( $cut, 0, $pos );
+			}
+		}
 		$space = mb_strrpos( $cut, ' ' );
 		$cut   = false !== $space && $space > $max * 0.6 ? mb_substr( $cut, 0, $space ) : $cut;
 		return rtrim( $cut, " ,;:.-\u{2014}" ) . '…';
@@ -266,7 +274,7 @@ final class IssueBuilder {
 		}
 		$parts = self::split( $items );
 		$name  = (string) $this->settings->get( 'name' );
-		$end   = (int) get_post_meta( $issue_id, '_rtnl_window_end', true );
+		$sent  = (int) ( get_post_meta( $issue_id, '_rtnl_sent_at', true ) ?: get_post_meta( $issue_id, '_rtnl_scheduled_for', true ) );
 
 		$preview_text = trim( (string) get_post_meta( $issue_id, '_rtnl_preview', true ) );
 		if ( '' === $preview_text && ! empty( $parts['stories'] ) ) {
@@ -277,7 +285,8 @@ final class IssueBuilder {
 			'name'            => $name,
 			'subject'         => html_entity_decode( get_the_title( $issue_id ), ENT_QUOTES, 'UTF-8' ),
 			'preview_text'    => $preview_text,
-			'date_label'      => wp_date( 'M j, Y', $end > 0 ? $end : time() ),
+			// The day readers get it: when sent or scheduled, else the next send slot.
+			'date_label'      => wp_date( 'M j, Y', $sent > 0 ? $sent : Schedule::next_send( Schedule::now() )->getTimestamp() ),
 			'intro'           => (string) get_post_meta( $issue_id, '_rtnl_intro', true ),
 			'updates'         => $parts['updates'],
 			'stories'         => $parts['stories'],
