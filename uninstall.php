@@ -18,6 +18,7 @@ global $wpdb;
 delete_option( 'riviantrackr_newsletter_options' );
 delete_option( 'riviantrackr_newsletter_db_version' );
 delete_option( 'riviantrackr_newsletter_last_window_end' );
+delete_option( 'riviantrackr_newsletter_rewrites' );
 delete_metadata( 'user', 0, 'riviantrackr_newsletter_invited', '', true );
 wp_clear_scheduled_hook( 'riviantrackr_newsletter_build_draft' );
 wp_clear_scheduled_hook( 'riviantrackr_newsletter_send_invites' );

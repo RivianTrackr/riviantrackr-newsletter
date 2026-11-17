@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+Privacy line under the signup button, a "Read the latest issue" link on the newsletter page once an issue has gone out, and web versions of sent issues at /newsletter/issue/<date>/ (noindex).
+
 ## 0.1.1
 
 `[riviantrackr_newsletter layout="page"]`: a centered card for the newsletter page that matches the sign-in and register pages.

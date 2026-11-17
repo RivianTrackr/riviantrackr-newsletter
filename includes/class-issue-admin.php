@@ -38,11 +38,7 @@ final class IssueAdmin {
 	}
 
 	public static function status( int $issue_id ): string {
-		$status = (string) get_post_meta( $issue_id, '_rtnl_status', true );
-		if ( 'scheduled' === $status && (int) get_post_meta( $issue_id, '_rtnl_scheduled_for', true ) <= time() ) {
-			return 'sent';
-		}
-		return '' !== $status ? $status : 'draft';
+		return IssueBuilder::status( $issue_id );
 	}
 
 	/**
@@ -324,10 +320,12 @@ final class IssueAdmin {
 			update_post_meta( $post_id, '_rtnl_status', 'sent' );
 			update_post_meta( $post_id, '_rtnl_sent_at', time() );
 		}
+		// The web version lives at /newsletter/issue/<send date>/ once it has gone out.
 		wp_update_post(
 			[
 				'ID'          => $post_id,
 				'post_status' => 'publish',
+				'post_name'   => ( $schedule ? $when : Schedule::now() )->format( 'Y-m-d' ),
 			]
 		);
 

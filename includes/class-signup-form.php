@@ -76,7 +76,18 @@ final class SignupForm {
 					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
 					<button type="submit" class="rtnl-btn"><?php echo $is_page ? esc_html__( 'Sign me up', 'riviantrackr-newsletter' ) : esc_html__( 'Sign up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
-				<p class="rtnl-signup__fine" data-rtnl-panel="form"><?php esc_html_e( 'We’ll send a confirmation link first. Unsubscribe any time.', 'riviantrackr-newsletter' ); ?></p>
+				<p class="rtnl-signup__fine" data-rtnl-panel="form">
+					<?php esc_html_e( 'We’ll send a confirmation link first. We never share your email, and you can unsubscribe any time.', 'riviantrackr-newsletter' ); ?>
+					<?php if ( '' !== get_privacy_policy_url() ) : ?>
+						<a class="rtnl-signup__link" href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Privacy policy', 'riviantrackr-newsletter' ); ?></a>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+
+			<?php if ( $is_page && IssueBuilder::has_published() && '' !== $this->settings->page_url() ) : ?>
+				<p class="rtnl-signup__latest">
+					<a class="rtnl-signup__link" href="<?php echo esc_url( IssuePages::latest_url( $this->settings->page_url() ) ); ?>"><?php esc_html_e( 'Read the latest issue', 'riviantrackr-newsletter' ); ?></a>
+				</p>
 			<?php endif; ?>
 
 			<p class="rtnl-signup__msg" data-rtnl-msg role="status" aria-live="polite" hidden></p>

@@ -69,7 +69,8 @@ final class Template {
 	 * @param array<string,mixed> $d name, subject, preview_text, date_label,
 	 *                               intro, updates[], stories[], site_url,
 	 *                               site_label, postal_address, reason,
-	 *                               unsubscribe_url, mirror_url.
+	 *                               unsubscribe_url, mirror_url, and
+	 *                               signup_url for the web version.
 	 *                               Items: title, url, summary, image?, image_alt?, label?.
 	 */
 	public static function issue( array $d ): string {
@@ -110,7 +111,21 @@ final class Template {
 			. esc_html__( 'More on RivianTrackr', 'riviantrackr-newsletter' ) . '</a></td></tr></table></td></tr>';
 
 		$address = trim( (string) ( $d['postal_address'] ?? '' ) );
-		$footer  = '<p class="rtnl-m" style="margin:0 0 8px;">' . esc_html( (string) ( $d['reason'] ?? '' ) ) . '</p>'
+		if ( '' !== (string) ( $d['signup_url'] ?? '' ) ) {
+			// Web version: invite the reader to subscribe instead of unsubscribe links.
+			$footer = '<p class="rtnl-m" style="margin:0 0 8px;">'
+				. '<a class="rtnl-a" href="' . esc_url( (string) $d['signup_url'] ) . '" style="color:' . $c['accent'] . ';text-decoration:underline;">'
+				/* translators: %s: newsletter name */
+				. esc_html( sprintf( __( 'Get %s in your inbox', 'riviantrackr-newsletter' ), (string) ( $d['name'] ?? '' ) ) ) . '</a></p>';
+			return self::document(
+				(string) ( $d['subject'] ?? '' ),
+				'',
+				self::masthead( (string) ( $d['name'] ?? '' ), (string) ( $d['date_label'] ?? '' ), $site_url ),
+				$body,
+				$footer
+			);
+		}
+		$footer = '<p class="rtnl-m" style="margin:0 0 8px;">' . esc_html( (string) ( $d['reason'] ?? '' ) ) . '</p>'
 			. '<p class="rtnl-m" style="margin:0 0 8px;">'
 			. '<a class="rtnl-a" href="' . self::href( (string) ( $d['mirror_url'] ?? '' ) ) . '" style="color:' . $c['accent'] . ';text-decoration:underline;">' . esc_html__( 'View in browser', 'riviantrackr-newsletter' ) . '</a>'
 			. ' &nbsp;·&nbsp; '
