@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+Claude writes in Jose's voice: new default guidelines (full specific opener, medium sentences, specifics, a quick take), each story's opening paragraphs as context, and the openings of the three latest articles as voice samples.
+
 ## 0.2.1
 
 Deleting a draft frees its week, so "Build a draft now" works again right away. The draft window now follows the newest existing issue instead of a stored option.

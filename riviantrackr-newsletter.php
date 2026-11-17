@@ -3,7 +3,7 @@
  * Plugin Name: RivianTrackr Newsletter
  * Plugin URI: https://riviantrackr.com
  * Description: RivianTrackr Weekly. Drafts a weekly issue from the week's news, articles and software updates, then sends it through Brevo after you review it. Includes an opt-in signup form, a Newsletter tab on the account page and a one-time member invite.
- * Version: 0.2.1
+ * Version: 0.2.2
  * Author: RivianTrackr
  * Author URI: https://github.com/RivianTrackr/
  * License: GPL v2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RTNL_VERSION', '0.2.1' );
+define( 'RTNL_VERSION', '0.2.2' );
 define( 'RTNL_FILE', __FILE__ );
 define( 'RTNL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RTNL_URL', plugin_dir_url( __FILE__ ) );
