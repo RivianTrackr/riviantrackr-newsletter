@@ -208,6 +208,11 @@ final class IssueBuilder {
 				return mb_substr( $cut, 0, $pos );
 			}
 		}
+		// One long first sentence: let it run a bit past the limit rather than cut it.
+		$longer = mb_substr( $text, 0, (int) ( $max * 1.6 ) );
+		if ( preg_match( '/[.!?](?=\s|$)/u', $longer, $m, PREG_OFFSET_CAPTURE ) ) {
+			return mb_substr( $longer, 0, mb_strlen( substr( $longer, 0, (int) $m[0][1] ) ) + 1 );
+		}
 		$space = mb_strrpos( $cut, ' ' );
 		$cut   = false !== $space && $space > $max * 0.6 ? mb_substr( $cut, 0, $space ) : $cut;
 		return rtrim( $cut, " ,;:.-\u{2014}" ) . '…';

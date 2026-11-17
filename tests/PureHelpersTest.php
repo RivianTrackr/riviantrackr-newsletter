@@ -20,6 +20,11 @@ final class PureHelpersTest extends TestCase {
 		$this->assertSame( 'Rivian ships updates often. Rivian ships updates often.', IssueBuilder::summarize( $text, 60 ) );
 	}
 
+	public function test_summarize_keeps_one_long_first_sentence(): void {
+		$text = 'Rivian ' . str_repeat( 'ships updates often and ', 3 ) . 'fast. Second sentence here.';
+		$this->assertSame( 'Rivian ' . str_repeat( 'ships updates often and ', 3 ) . 'fast.', IssueBuilder::summarize( $text, 60 ) );
+	}
+
 	public function test_summarize_falls_back_to_a_word_cut(): void {
 		$text = 'Rivian ' . str_repeat( 'ships updates often and ', 20 );
 		$out  = IssueBuilder::summarize( $text, 60 );

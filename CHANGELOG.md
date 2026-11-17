@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4
+
+A summary whose first sentence runs past the limit keeps that whole sentence (up to 1.6 times the limit) instead of being cut mid-sentence.
+
 ## 0.2.3
 
 - Claude picks the lead story and it moves to the top with the big image, so subject, intro and image agree.
