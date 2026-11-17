@@ -35,6 +35,39 @@ html[data-rt-theme="dark"] .rtnl-signup {
 	border-radius: 12px;
 }
 
+/* layout="page": the centered card on the newsletter page, sized like the register page. */
+.rtnl-signup.rtnl-signup--page:not(.rtnl-signup--tab) {
+	max-width: 480px;
+	margin: 0 auto 21px;
+	padding: 24px;
+}
+
+.rtnl-signup--page .rtnl-signup__title {
+	font-size: 24px;
+	letter-spacing: -0.3px;
+}
+
+.rtnl-signup--page .rtnl-signup__desc {
+	font-size: 14px;
+}
+
+.rtnl-signup--page .rtnl-signup__form {
+	flex-direction: column;
+	gap: 6px;
+}
+
+.rtnl-signup__label {
+	color: var(--rtnl-heading);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.rtnl-signup--page .rtnl-btn {
+	width: 100%;
+	height: 46px;
+	margin-top: 10px;
+}
+
 .rtnl-signup__title {
 	margin: 0 0 6px;
 	color: var(--rtnl-heading);
@@ -55,12 +88,12 @@ html[data-rt-theme="dark"] .rtnl-signup {
 	gap: 8px;
 }
 
-.rtnl-signup__input {
-	flex: 1;
+.rtnl-signup input.rtnl-signup__input {
+	flex: 1 1 auto;
 	min-width: 0;
 	height: 44px;
 	padding: 0 12px;
-	background: var(--rtnl-raised);
+	background: transparent;
 	border: 1px solid var(--rtnl-line);
 	border-radius: 8px;
 	color: var(--rtnl-text);
@@ -73,11 +106,11 @@ html[data-rt-theme="dark"] .rtnl-signup {
 	color: var(--rtnl-muted);
 }
 
-.rtnl-signup__input:hover {
+.rtnl-signup input.rtnl-signup__input:hover {
 	border-color: var(--rtnl-line-strong);
 }
 
-.rtnl-signup__input:focus {
+.rtnl-signup input.rtnl-signup__input:focus {
 	border-color: var(--rtnl-gold);
 	outline: none;
 	box-shadow: 0 0 0 3px color-mix(in srgb, var(--rtnl-gold) 25%, transparent);
