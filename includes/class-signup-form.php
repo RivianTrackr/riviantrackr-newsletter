@@ -46,14 +46,19 @@ final class SignupForm {
 
 	/**
 	 * `layout="page"` is the centered card for the newsletter page, matching
-	 * the sign-in and register pages. The default is a box for inside articles.
+	 * the sign-in and register pages. `layout="sidebar"` is a compact card
+	 * matching the sidebar's guide cards. The default is a box for inside
+	 * articles.
 	 *
 	 * @param array<string,string>|string $atts Shortcode attributes.
 	 */
 	public function render( $atts = [] ): string {
 		self::enqueue();
-		$name    = (string) $this->settings->get( 'name' );
-		$atts    = shortcode_atts( [ 'layout' => 'box' ], is_array( $atts ) ? $atts : [], self::SHORTCODE );
+		$name = (string) $this->settings->get( 'name' );
+		$atts = shortcode_atts( [ 'layout' => 'box' ], is_array( $atts ) ? $atts : [], self::SHORTCODE );
+		if ( 'sidebar' === $atts['layout'] ) {
+			return $this->render_sidebar();
+		}
 		$is_page = 'page' === $atts['layout'];
 		$heading = $is_page ? 'h1' : 'h3';
 
@@ -94,6 +99,52 @@ final class SignupForm {
 			<template data-rtnl-text="sent"><?php esc_html_e( 'Check your inbox for a confirmation link. It can take a minute to arrive.', 'riviantrackr-newsletter' ); ?></template>
 			<template data-rtnl-text="accepted"><?php esc_html_e( 'You’re in. Look for the first issue on Friday morning.', 'riviantrackr-newsletter' ); ?></template>
 			<template data-rtnl-text="unsubscribed"><?php esc_html_e( 'You’re unsubscribed. No more Friday emails.', 'riviantrackr-newsletter' ); ?></template>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * The sidebar card. Signed-out visitors get the same HTML (cache-safe).
+	 * Signed-in members who already subscribe see nothing, the rest get a
+	 * one-click Subscribe button.
+	 */
+	private function render_sidebar(): string {
+		$member = is_user_logged_in() ? wp_get_current_user() : null;
+		if ( $member instanceof \WP_User && false !== $this->subscriptions->is_subscribed_cached( $member ) ) {
+			return '';
+		}
+		$id   = wp_unique_id( 'rtnl-email-' );
+		$page = $this->settings->page_url();
+
+		ob_start();
+		?>
+		<div class="rtnl-signup rtnl-signup--sidebar" data-rtnl-signup>
+			<p class="rtnl-signup__eyebrow"><?php echo esc_html( (string) $this->settings->get( 'name' ) ); ?></p>
+			<h3 class="rtnl-signup__title"><?php esc_html_e( 'Your Friday Rivian roundup', 'riviantrackr-newsletter' ); ?></h3>
+			<p class="rtnl-signup__desc"><?php esc_html_e( 'The week’s news, software updates and our latest stories in one short email.', 'riviantrackr-newsletter' ); ?></p>
+
+			<?php if ( $member instanceof \WP_User ) : ?>
+				<div class="rtnl-signup__member" data-rtnl-member data-subscribed="0">
+					<button type="button" class="rtnl-btn" data-rtnl-toggle data-rtnl-state="0"><?php esc_html_e( 'Subscribe', 'riviantrackr-newsletter' ); ?></button>
+				</div>
+			<?php else : ?>
+				<form class="rtnl-signup__form" data-rtnl-panel="form" data-rtnl-form novalidate>
+					<label class="rtnl-sr" for="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
+					<input class="rtnl-signup__input" id="<?php echo esc_attr( $id ); ?>" type="email" name="email" autocomplete="email" placeholder="<?php esc_attr_e( 'you@example.com', 'riviantrackr-newsletter' ); ?>" required>
+					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
+					<button type="submit" class="rtnl-btn"><?php esc_html_e( 'Sign me up', 'riviantrackr-newsletter' ); ?></button>
+				</form>
+				<p class="rtnl-signup__fine" data-rtnl-panel="form"><?php esc_html_e( 'Free. Unsubscribe any time.', 'riviantrackr-newsletter' ); ?></p>
+			<?php endif; ?>
+
+			<?php if ( '' !== $page && IssueBuilder::has_published() ) : ?>
+				<a class="rtnl-signup__more" href="<?php echo esc_url( IssuePages::latest_url( $page ) ); ?>"><?php esc_html_e( 'Read the latest issue', 'riviantrackr-newsletter' ); ?></a>
+			<?php endif; ?>
+
+			<p class="rtnl-signup__msg" data-rtnl-msg role="status" aria-live="polite" hidden></p>
+			<template data-rtnl-text="sent"><?php esc_html_e( 'Check your inbox for a confirmation link.', 'riviantrackr-newsletter' ); ?></template>
+			<template data-rtnl-text="accepted"><?php esc_html_e( 'You’re in. See you Friday.', 'riviantrackr-newsletter' ); ?></template>
 		</div>
 		<?php
 		return (string) ob_get_clean();
