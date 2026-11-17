@@ -16,7 +16,7 @@ final class Scheduler {
 
 	public const DRAFT_HOOK = 'riviantrackr_newsletter_build_draft';
 
-	public function __construct( private Settings $settings, private IssueBuilder $builder ) {}
+	public function __construct( private Settings $settings, private IssueBuilder $builder, private Writer $writer ) {}
 
 	public function register_hooks(): void {
 		add_action( self::DRAFT_HOOK, [ $this, 'run' ] );
@@ -36,6 +36,16 @@ final class Scheduler {
 			return;
 		}
 
+		// Let Claude write the subject, preview text and intro first.
+		$ai_note = '';
+		if ( $this->settings->get( 'ai_auto' ) && Writer::available() && [] !== (array) get_post_meta( $issue, '_rtnl_items', true ) ) {
+			$written = $this->writer->write( $issue );
+			$ai_note = is_wp_error( $written )
+				/* translators: %s: error */
+				? "\n\n" . sprintf( __( 'Claude couldn’t write the intro this time (%s), so it’s blank.', 'riviantrackr-newsletter' ), $written->get_error_message() )
+				: "\n\n" . __( 'Claude wrote the subject, preview text and intro. Change anything that doesn’t sound like you.', 'riviantrackr-newsletter' );
+		}
+
 		$count = count( (array) get_post_meta( $issue, '_rtnl_items', true ) );
 		$name  = (string) $this->settings->get( 'name' );
 		Emails::send(
@@ -50,8 +60,8 @@ final class Scheduler {
 					_n( "It has %1\$d story from this week. Add your intro, drop anything you don't want, send yourself a test, then schedule it for %2\$s.", "It has %1\$d stories from this week. Add your intro, drop anything you don't want, send yourself a test, then schedule it for %2\$s.", $count, 'riviantrackr-newsletter' ),
 					$count,
 					Schedule::label( Schedule::next_send( Schedule::now() ) )
-				),
-				'button'   => __( 'Review the draft', 'riviantrackr-newsletter' ),
+				) . $ai_note,
+				'button'   => __( 'Review and approve', 'riviantrackr-newsletter' ),
 				'url'      => admin_url( 'post.php?post=' . (int) $issue . '&action=edit' ),
 				'footnote' => __( 'Nothing goes to readers until you schedule or send it.', 'riviantrackr-newsletter' ),
 			]

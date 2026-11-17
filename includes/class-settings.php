@@ -32,6 +32,8 @@ final class Settings {
 			'postal_address' => '',
 			'page_id'        => 0,
 			'notify_email'   => '',
+			'ai_auto'        => true,
+			'ai_guidelines'  => Writer::DEFAULT_GUIDELINES,
 		];
 	}
 
@@ -76,6 +78,11 @@ final class Settings {
 		$out['postal_address'] = trim( (string) preg_replace( "/\n{2,}/", "\n", str_replace( "\r", '', $address ) ) );
 
 		$out['page_id'] = max( 0, (int) ( $input['page_id'] ?? 0 ) );
+
+		// A checkbox that isn't sent is off.
+		$out['ai_auto']       = ! empty( $input['ai_auto'] );
+		$guidelines           = trim( sanitize_textarea_field( (string) ( $input['ai_guidelines'] ?? '' ) ) );
+		$out['ai_guidelines'] = '' !== $guidelines ? $guidelines : Writer::DEFAULT_GUIDELINES;
 
 		return $out;
 	}

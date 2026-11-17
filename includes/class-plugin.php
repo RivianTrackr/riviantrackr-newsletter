@@ -22,6 +22,8 @@ final class Plugin {
 		$subscriptions = new Subscriptions( $settings, $brevo, Tokens::from_wp() );
 		$form          = new SignupForm( $settings, $subscriptions );
 		$invites       = new Invites( $settings, $subscriptions );
+		$writer        = new Writer( $settings, $builder );
+		$stats         = new Stats( $settings, $brevo );
 
 		add_action( 'init', [ IssueBuilder::class, 'register_post_type' ] );
 		add_action( 'init', [ Installer::class, 'maybe_flush_rewrites' ], 20 );
@@ -30,13 +32,14 @@ final class Plugin {
 		$subscriptions->register_hooks();
 		$form->register_hooks();
 		( new AccountTab( $settings, $form ) )->register_hooks();
-		( new Scheduler( $settings, $builder ) )->register_hooks();
+		( new Scheduler( $settings, $builder, $writer ) )->register_hooks();
 		$invites->register_hooks();
 		( new IssuePages( $settings, $builder ) )->register_hooks();
 
 		if ( is_admin() ) {
-			( new IssueAdmin( $settings, $builder, $brevo ) )->register_hooks();
+			( new IssueAdmin( $settings, $builder, $brevo, $writer ) )->register_hooks();
 			( new SettingsPage( $settings, $brevo, $builder, $invites ) )->register_hooks();
+			( new DashboardPage( $settings, $stats ) )->register_hooks();
 		}
 	}
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Newsletter → Dashboard: subscribers, net signups, opens and clicks per issue from Brevo. A small widget on the WordPress dashboard.
+- Claude writes the subject line, preview text and intro, automatically on the Thursday draft and on demand with "Write with Claude". Guidelines are editable and it learns from your last three sent intros.
+- Settings and dashboard screens use the shared RivianTrackr admin design.
+- The Thursday email button now reads "Review and approve".
+
 ## 0.1.4
 
 Sidebar card: subscribed members see "You’re subscribed" with a link to manage it on their account page, in place of no card.
