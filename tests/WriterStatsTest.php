@@ -23,14 +23,24 @@ final class WriterStatsTest extends TestCase {
 		$this->assertSame( [ 'subject', 'preview_text', 'intro' ], $body['output_config']['format']['schema']['required'] );
 		$this->assertArrayNotHasKey( 'thinking', $body );
 		$this->assertStringContainsString( Writer::DEFAULT_GUIDELINES, $body['system'] );
-		$this->assertStringContainsString( '- Software update 2026.41: Alternative routes.', $body['messages'][0]['content'] );
+		$this->assertStringContainsString( "Title: Software update 2026.41\nSummary: Alternative routes.", $body['messages'][0]['content'] );
 		$this->assertStringNotContainsString( 'past_intros', $body['messages'][0]['content'] );
+		$this->assertStringNotContainsString( 'voice_samples', $body['messages'][0]['content'] );
 	}
 
 	public function test_request_body_includes_custom_guidelines_and_past_intros(): void {
 		$body = Writer::request_body( 'Be brief.', $this->data(), [ 'Last week intro.' ] );
 		$this->assertStringContainsString( 'Be brief.', $body['system'] );
 		$this->assertStringContainsString( "<past_intros>\nLast week intro.", $body['messages'][0]['content'] );
+	}
+
+	public function test_request_body_includes_openings_and_voice_samples(): void {
+		$data                          = $this->data();
+		$data['stories'][0]['opening'] = 'MotorTrend has named the Rivian R2 its 2027 SUV of the Year.';
+		$body                          = Writer::request_body( '', $data, [], [ 'I see it as a make or break moment.' ] );
+		$this->assertStringContainsString( 'Opening: MotorTrend has named', $body['messages'][0]['content'] );
+		$this->assertStringContainsString( "<voice_samples>\nI see it as a make or break moment.", $body['messages'][0]['content'] );
+		$this->assertStringContainsString( 'Call Rivian', $body['system'] );
 	}
 
 	public function test_parse_reads_text_block_and_tidies_dashes(): void {
