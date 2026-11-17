@@ -92,6 +92,14 @@ final class TemplateTest extends TestCase {
 		$this->assertDoesNotMatchRegularExpression( '/(^|\}|,)\.rtnl-/', $ogsc );
 	}
 
+	public function test_web_version_invites_instead_of_unsubscribe(): void {
+		$html = Template::issue( $this->issue( [ 'signup_url' => 'https://riviantrackr.com/newsletter/' ] ) );
+		$this->assertStringContainsString( 'Get RivianTrackr Weekly in your inbox', $html );
+		$this->assertStringContainsString( 'href="https://riviantrackr.com/newsletter/"', $html );
+		$this->assertStringNotContainsString( '{{ unsubscribe }}', $html );
+		$this->assertStringNotContainsString( 'PO Box 123', $html );
+	}
+
 	public function test_message_has_button_and_heading(): void {
 		$html = Template::message(
 			[

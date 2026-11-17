@@ -173,6 +173,32 @@ html[data-rt-theme="dark"] .rtnl-signup {
 	font-size: 14px;
 }
 
+.rtnl-signup__link {
+	color: var(--rtnl-heading);
+	font-weight: 500;
+	text-decoration: underline;
+	text-decoration-color: var(--rtnl-gold);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
+	white-space: nowrap;
+}
+
+.rtnl-signup__link:hover {
+	color: var(--rtc-accent-text-hover, #6f4700);
+}
+
+html[data-rt-theme="dark"] .rtnl-signup__link:hover {
+	color: var(--rtnl-gold);
+}
+
+.rtnl-signup__latest {
+	margin: 16px 0 0;
+	padding-top: 16px;
+	border-top: 1px solid var(--rtnl-line);
+	font-size: 14px;
+	text-align: center;
+}
+
 .rtnl-signup__msg {
 	margin: 12px 0 0;
 	color: var(--rtnl-text);

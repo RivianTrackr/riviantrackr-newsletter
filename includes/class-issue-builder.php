@@ -24,7 +24,7 @@ final class IssueBuilder {
 		register_post_type(
 			self::POST_TYPE,
 			[
-				'labels'          => [
+				'labels'              => [
 					'name'          => __( 'Newsletter', 'riviantrackr-newsletter' ),
 					'singular_name' => __( 'Issue', 'riviantrackr-newsletter' ),
 					'all_items'     => __( 'Issues', 'riviantrackr-newsletter' ),
@@ -33,17 +33,26 @@ final class IssueBuilder {
 					'edit_item'     => __( 'Edit issue', 'riviantrackr-newsletter' ),
 					'not_found'     => __( 'No issues yet. A draft appears every Thursday at 5 PM, or build one now from Settings.', 'riviantrackr-newsletter' ),
 				],
-				'public'          => false,
-				'show_ui'         => true,
-				'show_in_menu'    => true,
-				'show_in_rest'    => false,
-				'menu_icon'       => 'dashicons-email-alt',
-				'menu_position'   => 26,
-				'supports'        => [ 'title' ],
-				'capability_type' => 'post',
-				'map_meta_cap'    => true,
+				// Not public, but viewable: a sent issue has a web version at
+				// /newsletter/issue/<date>/ (IssuePages decides what is shown).
+				'public'              => false,
+				'publicly_queryable'  => true,
+				'exclude_from_search' => true,
+				'show_in_nav_menus'   => false,
+				'rewrite'             => [
+					'slug'       => 'newsletter/issue',
+					'with_front' => false,
+				],
+				'show_ui'             => true,
+				'show_in_menu'        => true,
+				'show_in_rest'        => false,
+				'menu_icon'           => 'dashicons-email-alt',
+				'menu_position'       => 26,
+				'supports'            => [ 'title' ],
+				'capability_type'     => 'post',
+				'map_meta_cap'        => true,
 				// Issues come from the weekly draft or Newsletter → Settings → Build a draft now.
-				'capabilities'    => [ 'create_posts' => 'do_not_allow' ],
+				'capabilities'        => [ 'create_posts' => 'do_not_allow' ],
 			]
 		);
 	}
@@ -110,6 +119,55 @@ final class IssueBuilder {
 		update_post_meta( $issue, '_rtnl_status', 'draft' );
 		update_option( self::LAST_END, $now, false );
 		return (int) $issue;
+	}
+
+	/**
+	 * Draft, scheduled or sent. A scheduled issue counts as sent once its
+	 * send time has passed.
+	 */
+	public static function status( int $issue_id ): string {
+		$status = (string) get_post_meta( $issue_id, '_rtnl_status', true );
+		if ( 'scheduled' === $status && (int) get_post_meta( $issue_id, '_rtnl_scheduled_for', true ) <= time() ) {
+			return 'sent';
+		}
+		return '' !== $status ? $status : 'draft';
+	}
+
+	/**
+	 * The most recent issue that has gone out, or 0.
+	 */
+	public static function latest_sent(): int {
+		$ids = get_posts(
+			[
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 5,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'fields'         => 'ids',
+			]
+		);
+		foreach ( $ids as $id ) {
+			if ( 'sent' === self::status( (int) $id ) ) {
+				return (int) $id;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Whether any issue has been scheduled or sent yet.
+	 */
+	public static function has_published(): bool {
+		$ids = get_posts(
+			[
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+			]
+		);
+		return [] !== $ids;
 	}
 
 	public static function default_subject( string $name, string $lead_title ): string {

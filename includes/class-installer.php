@@ -36,6 +36,17 @@ final class Installer {
 		}
 	}
 
+	/**
+	 * Issue URLs (/newsletter/issue/<date>/) need rewrite rules. Flush once
+	 * per plugin version, after the post type is registered.
+	 */
+	public static function maybe_flush_rewrites(): void {
+		if ( get_option( 'riviantrackr_newsletter_rewrites' ) !== RTNL_VERSION ) {
+			flush_rewrite_rules( false );
+			update_option( 'riviantrackr_newsletter_rewrites', RTNL_VERSION, true );
+		}
+	}
+
 	private static function install_table(): void {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

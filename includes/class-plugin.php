@@ -24,6 +24,7 @@ final class Plugin {
 		$invites       = new Invites( $settings, $subscriptions );
 
 		add_action( 'init', [ IssueBuilder::class, 'register_post_type' ] );
+		add_action( 'init', [ Installer::class, 'maybe_flush_rewrites' ], 20 );
 		add_action( 'admin_init', [ Installer::class, 'maybe_upgrade' ] );
 
 		$subscriptions->register_hooks();
@@ -31,6 +32,7 @@ final class Plugin {
 		( new AccountTab( $settings, $form ) )->register_hooks();
 		( new Scheduler( $settings, $builder ) )->register_hooks();
 		$invites->register_hooks();
+		( new IssuePages( $settings, $builder ) )->register_hooks();
 
 		if ( is_admin() ) {
 			( new IssueAdmin( $settings, $builder, $brevo ) )->register_hooks();
