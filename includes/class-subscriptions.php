@@ -99,7 +99,7 @@ final class Subscriptions {
 	 * Signup form: rate-limit, then email a confirm link. Says the same thing
 	 * whether or not the address is already on the list.
 	 */
-	public function request_signup( string $email, string $ip ): true|\WP_Error {
+	public function request_signup( string $email, string $ip ): bool|\WP_Error {
 		$email = sanitize_email( $email );
 		if ( ! is_email( $email ) ) {
 			return new \WP_Error( 'rtnl_email', __( 'Enter a valid email address.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
@@ -137,7 +137,7 @@ final class Subscriptions {
 	/**
 	 * A confirm or invite link's button was pressed.
 	 */
-	public function accept( string $token, string $ip ): true|\WP_Error {
+	public function accept( string $token, string $ip ): bool|\WP_Error {
 		$data = $this->tokens->read( $token, time() );
 		if ( null === $data ) {
 			return new \WP_Error( 'rtnl_token', __( 'This link has expired or isn’t valid. Sign up again below.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
@@ -164,7 +164,7 @@ final class Subscriptions {
 		return add_query_arg( 'rtnl_invite', $token, $this->settings->page_url() );
 	}
 
-	public function subscribe( string $email, string $source, int $user_id, string $ip ): true|\WP_Error {
+	public function subscribe( string $email, string $source, int $user_id, string $ip ): bool|\WP_Error {
 		$done = $this->brevo->subscribe( $email, (int) $this->settings->get( 'list_id' ) );
 		if ( is_wp_error( $done ) ) {
 			return self::public_error( $done );
@@ -173,7 +173,7 @@ final class Subscriptions {
 		return true;
 	}
 
-	public function unsubscribe( string $email, string $source, int $user_id, string $ip ): true|\WP_Error {
+	public function unsubscribe( string $email, string $source, int $user_id, string $ip ): bool|\WP_Error {
 		$done = $this->brevo->unsubscribe( $email, (int) $this->settings->get( 'list_id' ) );
 		if ( is_wp_error( $done ) ) {
 			return self::public_error( $done );

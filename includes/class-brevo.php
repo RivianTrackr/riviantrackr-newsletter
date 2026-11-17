@@ -98,23 +98,23 @@ final class Brevo {
 		return (int) ( $result['id'] ?? 0 );
 	}
 
-	public function send_test( int $campaign_id, string $email ): true|\WP_Error {
+	public function send_test( int $campaign_id, string $email ): bool|\WP_Error {
 		$result = $this->request( 'POST', '/emailCampaigns/' . $campaign_id . '/sendTest', [ 'emailTo' => [ $email ] ] );
 		return is_wp_error( $result ) ? $result : true;
 	}
 
-	public function send_now( int $campaign_id ): true|\WP_Error {
+	public function send_now( int $campaign_id ): bool|\WP_Error {
 		$result = $this->request( 'POST', '/emailCampaigns/' . $campaign_id . '/sendNow' );
 		return is_wp_error( $result ) ? $result : true;
 	}
 
 	/** Stops a scheduled campaign from going out. */
-	public function suspend( int $campaign_id ): true|\WP_Error {
+	public function suspend( int $campaign_id ): bool|\WP_Error {
 		$result = $this->request( 'PUT', '/emailCampaigns/' . $campaign_id . '/status', [ 'status' => 'suspended' ] );
 		return is_wp_error( $result ) ? $result : true;
 	}
 
-	public function delete_campaign( int $campaign_id ): true|\WP_Error {
+	public function delete_campaign( int $campaign_id ): bool|\WP_Error {
 		$result = $this->request( 'DELETE', '/emailCampaigns/' . $campaign_id );
 		return is_wp_error( $result ) ? $result : true;
 	}
@@ -131,7 +131,7 @@ final class Brevo {
 	 * opts in again is taken off Brevo's blocklist, since this only runs on
 	 * an explicit opt-in.
 	 */
-	public function subscribe( string $email, int $list_id ): true|\WP_Error {
+	public function subscribe( string $email, int $list_id ): bool|\WP_Error {
 		$result = $this->request(
 			'POST',
 			'/contacts',
@@ -145,7 +145,7 @@ final class Brevo {
 		return is_wp_error( $result ) ? $result : true;
 	}
 
-	public function unsubscribe( string $email, int $list_id ): true|\WP_Error {
+	public function unsubscribe( string $email, int $list_id ): bool|\WP_Error {
 		$result = $this->request( 'POST', '/contacts/lists/' . $list_id . '/contacts/remove', [ 'emails' => [ $email ] ] );
 		if ( is_wp_error( $result ) ) {
 			// Not on the list (or no such contact) already means unsubscribed.
