@@ -71,6 +71,13 @@ final class Writer {
 		update_post_meta( $issue_id, '_rtnl_intro', $result['intro'] );
 		update_post_meta( $issue_id, '_rtnl_preview', $result['preview_text'] );
 		update_post_meta( $issue_id, '_rtnl_ai_written', time() );
+
+		$titles = [];
+		foreach ( $data['stories'] as $item ) {
+			$titles[ (int) $item['id'] ] = (string) $item['title'];
+		}
+		$ids = array_map( 'intval', (array) get_post_meta( $issue_id, '_rtnl_items', true ) );
+		update_post_meta( $issue_id, '_rtnl_items', self::lead_first( $ids, $titles, $result['lead_story'] ) );
 		return true;
 	}
 
@@ -167,7 +174,7 @@ final class Writer {
 
 		$prompt = 'Write the subject line, preview text and intro for this week\'s issue of ' . ( $data['name'] ?? 'the newsletter' ) . ".\n\n"
 			. "<stories>\n" . implode( "\n", $lines ) . "\n</stories>\n\n"
-			. "The stories are listed in the order they appear in the email. Pick the lead yourself: the biggest news for Rivian owners, which isn't always the first or newest.\n"
+			. "Pick the lead yourself: the biggest news for Rivian owners, which isn't always the first or newest. Lead the subject and the intro with it and give its exact title as lead_story. It moves to the top of the email with the big image.\n"
 			. 'The intro is plain text. Separate paragraphs with a blank line.';
 		if ( [] !== $samples ) {
 			$prompt .= "\n\nOpenings of the editor's latest articles. This is the voice to write in: sentence length, specifics, asides. Don't reuse their content:\n\n<voice_samples>\n"
@@ -198,8 +205,12 @@ final class Writer {
 							'subject'      => [ 'type' => 'string' ],
 							'preview_text' => [ 'type' => 'string' ],
 							'intro'        => [ 'type' => 'string' ],
+							'lead_story'   => [
+								'type' => 'string',
+								'enum' => array_values( array_map( static fn( array $i ): string => (string) $i['title'], (array) ( $data['stories'] ?? [] ) ) ) ?: [ '' ],
+							],
 						],
-						'required'             => [ 'subject', 'preview_text', 'intro' ],
+						'required'             => [ 'subject', 'preview_text', 'intro', 'lead_story' ],
 						'additionalProperties' => false,
 					],
 				],
@@ -228,7 +239,7 @@ final class Writer {
 	 * Pull the JSON answer out of a Messages API response. Pure, for tests.
 	 *
 	 * @param array<string,mixed> $response Decoded response body.
-	 * @return array{subject: string, preview_text: string, intro: string}|\WP_Error
+	 * @return array{subject: string, preview_text: string, intro: string, lead_story: string}|\WP_Error
 	 */
 	public static function parse( array $response ): array|\WP_Error {
 		if ( 'refusal' === ( $response['stop_reason'] ?? '' ) ) {
@@ -248,7 +259,27 @@ final class Writer {
 			'subject'      => self::tidy( (string) $json['subject'] ),
 			'preview_text' => self::tidy( (string) $json['preview_text'] ),
 			'intro'        => self::tidy( (string) $json['intro'] ),
+			'lead_story'   => (string) ( $json['lead_story'] ?? '' ),
 		];
+	}
+
+	/**
+	 * Move the story Claude picked as the lead to the top, so the subject,
+	 * the intro and the big image all point at the same story. Pure, for tests.
+	 *
+	 * @param int[]             $ids     Item IDs in their current order.
+	 * @param array<int,string> $titles  Item ID => title.
+	 * @return int[]
+	 */
+	public static function lead_first( array $ids, array $titles, string $lead ): array {
+		foreach ( $ids as $i => $id ) {
+			if ( '' !== $lead && ( $titles[ $id ] ?? null ) === $lead ) {
+				unset( $ids[ $i ] );
+				array_unshift( $ids, $id );
+				break;
+			}
+		}
+		return array_values( $ids );
 	}
 
 	/**
@@ -261,7 +292,7 @@ final class Writer {
 
 	/**
 	 * @param array<string,mixed> $body Request body.
-	 * @return array{subject: string, preview_text: string, intro: string}|\WP_Error
+	 * @return array{subject: string, preview_text: string, intro: string, lead_story: string}|\WP_Error
 	 */
 	private function call( array $body ): array|\WP_Error {
 		$response = wp_remote_post(

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3
+
+- Claude picks the lead story and it moves to the top with the big image, so subject, intro and image agree.
+- The email header shows the send date, not the day the draft was built.
+- Story summaries end on a full sentence when they can.
+
 ## 0.2.2
 
 Claude writes in Jose's voice: new default guidelines (full specific opener, medium sentences, specifics, a quick take), each story's opening paragraphs as context, and the openings of the three latest articles as voice samples.

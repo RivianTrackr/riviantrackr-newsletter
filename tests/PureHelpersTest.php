@@ -15,8 +15,13 @@ final class PureHelpersTest extends TestCase {
 		$this->assertSame( 'Short & sweet', IssueBuilder::summarize( '<p>Short &amp;   sweet</p>' ) );
 	}
 
-	public function test_summarize_cuts_at_a_word(): void {
+	public function test_summarize_ends_on_a_full_sentence(): void {
 		$text = str_repeat( 'Rivian ships updates often. ', 20 );
+		$this->assertSame( 'Rivian ships updates often. Rivian ships updates often.', IssueBuilder::summarize( $text, 60 ) );
+	}
+
+	public function test_summarize_falls_back_to_a_word_cut(): void {
+		$text = 'Rivian ' . str_repeat( 'ships updates often and ', 20 );
 		$out  = IssueBuilder::summarize( $text, 60 );
 		$this->assertLessThanOrEqual( 61, mb_strlen( $out ) );
 		$this->assertStringEndsWith( '…', $out );

@@ -20,7 +20,7 @@ final class WriterStatsTest extends TestCase {
 		$this->assertSame( 'claude-opus-5-5', $body['model'] );
 		$this->assertSame( 'default', $body['fallbacks'] );
 		$this->assertSame( 'json_schema', $body['output_config']['format']['type'] );
-		$this->assertSame( [ 'subject', 'preview_text', 'intro' ], $body['output_config']['format']['schema']['required'] );
+		$this->assertSame( [ 'subject', 'preview_text', 'intro', 'lead_story' ], $body['output_config']['format']['schema']['required'] );
 		$this->assertArrayNotHasKey( 'thinking', $body );
 		$this->assertStringContainsString( Writer::DEFAULT_GUIDELINES, $body['system'] );
 		$this->assertStringContainsString( "Title: Software update 2026.41\nSummary: Alternative routes.", $body['messages'][0]['content'] );
@@ -60,6 +60,18 @@ final class WriterStatsTest extends TestCase {
 	public function test_parse_handles_refusal_and_junk(): void {
 		$this->assertInstanceOf( WP_Error::class, Writer::parse( [ 'stop_reason' => 'refusal', 'content' => [] ] ) );
 		$this->assertInstanceOf( WP_Error::class, Writer::parse( [ 'content' => [ [ 'type' => 'text', 'text' => 'nope' ] ] ] ) );
+	}
+
+	public function test_lead_story_is_an_enum_of_story_titles(): void {
+		$body = Writer::request_body( '', $this->data() );
+		$this->assertSame( [ 'R2 wins SUV of the Year' ], $body['output_config']['format']['schema']['properties']['lead_story']['enum'] );
+	}
+
+	public function test_lead_first_moves_the_pick_to_the_top(): void {
+		$titles = [ 10 => 'AI Day', 11 => 'R2 wins', 12 => 'Invites' ];
+		$this->assertSame( [ 11, 10, 12 ], Writer::lead_first( [ 10, 11, 12 ], $titles, 'R2 wins' ) );
+		$this->assertSame( [ 10, 11, 12 ], Writer::lead_first( [ 10, 11, 12 ], $titles, 'Nope' ) );
+		$this->assertSame( [ 99, 10, 11 ], Writer::lead_first( [ 99, 10, 11 ], $titles, '' ) );
 	}
 
 	public function test_stats_rates(): void {
