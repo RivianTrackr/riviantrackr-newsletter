@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+Dashboard: new signups and unsubscribes over 30 days, average opens and clicks over the last 4 issues, invites accepted, bounces per issue, the most clicked links in the last issue, and where signups came from.
+
 ## 0.3.0
 
 New email layout: logo in the masthead, intro signed by Jose, a Top story block with the photo and a read link, software updates in a raised callout, and the rest as compact rows with thumbnails. One-off emails (confirm, invite, draft ready) carry the logo too.

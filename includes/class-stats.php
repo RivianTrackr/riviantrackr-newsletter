@@ -72,7 +72,7 @@ final class Stats {
 		if ( $campaign_id <= 0 ) {
 			return null;
 		}
-		$key    = 'rtnl_cs_' . $campaign_id;
+		$key    = 'rtnl_cs2_' . $campaign_id;
 		$cached = get_transient( $key );
 		if ( is_array( $cached ) ) {
 			return $cached;
@@ -88,7 +88,7 @@ final class Stats {
 
 	/**
 	 * @param array<string,mixed> $totals Brevo globalStats.
-	 * @return array{sent: int, delivered: int, opens: int, clicks: int, unsubscribes: int}
+	 * @return array{sent: int, delivered: int, opens: int, clicks: int, unsubscribes: int, bounces: int, complaints: int}
 	 */
 	public static function from_brevo( array $totals ): array {
 		return [
@@ -97,6 +97,133 @@ final class Stats {
 			'opens'        => (int) ( $totals['uniqueViews'] ?? 0 ),
 			'clicks'       => (int) ( $totals['uniqueClicks'] ?? 0 ),
 			'unsubscribes' => (int) ( $totals['unsubscriptions'] ?? 0 ),
+			'bounces'      => (int) ( $totals['hardBounces'] ?? 0 ) + (int) ( $totals['softBounces'] ?? 0 ),
+			'complaints'   => (int) ( $totals['complaints'] ?? 0 ),
+		];
+	}
+
+	/**
+	 * Opt-ins and opt-outs on the site in the last N days, by where they
+	 * happened (form, account, invite).
+	 *
+	 * @return array<string,array{in: int, out: int}>
+	 */
+	public function by_source( int $days ): array {
+		global $wpdb;
+		$table = Installer::table();
+		$since = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
+		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT source, action, COUNT(*) AS n FROM {$table} WHERE created_at >= %s GROUP BY source, action", $since ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+		$out   = [];
+		foreach ( (array) $rows as $row ) {
+			$source                  = (string) $row['source'];
+			$out[ $source ]        ??= [
+				'in'  => 0,
+				'out' => 0,
+			];
+			$key                     = 'subscribe' === $row['action'] ? 'in' : 'out';
+			$out[ $source ][ $key ] += (int) $row['n'];
+		}
+		ksort( $out );
+		return $out;
+	}
+
+	/**
+	 * Members invited, and how many said yes.
+	 *
+	 * @return array{invited: int, accepted: int}
+	 */
+	public function invites(): array {
+		global $wpdb;
+		$table    = Installer::table();
+		$query    = new \WP_User_Query(
+			[
+				'fields'      => 'ID',
+				'number'      => 1,
+				'count_total' => true,
+				'meta_key'    => Invites::META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Admin screen only.
+			]
+		);
+		$accepted = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT email) FROM {$table} WHERE action = 'subscribe' AND source = 'invite'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+		return [
+			'invited'  => (int) $query->get_total(),
+			'accepted' => $accepted,
+		];
+	}
+
+	/**
+	 * Clicks per link for one campaign, most clicked first.
+	 *
+	 * @return array<string,int>
+	 */
+	public function links( int $campaign_id, int $limit = 5 ): array {
+		if ( $campaign_id <= 0 ) {
+			return [];
+		}
+		$key    = 'rtnl_cl_' . $campaign_id;
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		$result = $this->brevo->request( 'GET', '/emailCampaigns/' . $campaign_id . '?statistics=linksStats' );
+		if ( is_wp_error( $result ) ) {
+			return [];
+		}
+		$links = array_slice( self::links_from_brevo( (array) ( $result['statistics']['linksStats'] ?? [] ) ), 0, $limit, true );
+		set_transient( $key, $links, self::CACHE );
+		return $links;
+	}
+
+	/**
+	 * Brevo's linksStats is url => clicks, sometimes nested per list.
+	 * Unsubscribe and view-in-browser links are left out. Pure, for tests.
+	 *
+	 * @param array<string,mixed> $raw linksStats.
+	 * @return array<string,int>
+	 */
+	public static function links_from_brevo( array $raw ): array {
+		$links = [];
+		$walk  = static function ( array $node ) use ( &$walk, &$links ): void {
+			foreach ( $node as $url => $value ) {
+				if ( is_array( $value ) ) {
+					$walk( $value );
+				} elseif ( is_string( $url ) && str_starts_with( $url, 'http' ) ) {
+					$links[ $url ] = ( $links[ $url ] ?? 0 ) + (int) $value;
+				}
+			}
+		};
+		$walk( $raw );
+		$links = array_filter( $links, static fn( string $url ): bool => ! preg_match( '~unsubscribe|/mirror|sendibt|r\.sb~i', $url ), ARRAY_FILTER_USE_KEY );
+		arsort( $links );
+		return $links;
+	}
+
+	/**
+	 * Averages across sent issues that have numbers.
+	 *
+	 * @param array<int,array<string,mixed>> $issues Rows from issues().
+	 * @return array{opens: ?float, clicks: ?float, unsubscribes: int}
+	 */
+	public static function averages( array $issues, int $since = 0 ): array {
+		$delivered = 0;
+		$opens     = 0;
+		$clicks    = 0;
+		$unsubs    = 0;
+		foreach ( $issues as $row ) {
+			$s = $row['stats'] ?? null;
+			if ( ! is_array( $s ) ) {
+				continue;
+			}
+			$delivered += $s['delivered'];
+			$opens     += $s['opens'];
+			$clicks    += $s['clicks'];
+			if ( (int) ( $row['sent_at'] ?? 0 ) >= $since ) {
+				$unsubs += $s['unsubscribes'];
+			}
+		}
+		return [
+			'opens'        => self::rate( $opens, $delivered ),
+			'clicks'       => self::rate( $clicks, $delivered ),
+			'unsubscribes' => $unsubs,
 		];
 	}
 

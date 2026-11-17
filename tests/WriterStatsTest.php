@@ -81,4 +81,28 @@ final class WriterStatsTest extends TestCase {
 		$this->assertSame( '8.5%', Stats::percent( Stats::rate( $s['clicks'], $s['delivered'] ) ) );
 		$this->assertSame( '–', Stats::percent( Stats::rate( 3, 0 ) ) );
 	}
+
+	public function test_links_from_brevo_flattens_sorts_and_skips_unsubscribe(): void {
+		$links = Stats::links_from_brevo(
+			[
+				'https://riviantrackr.com/r2/'         => 12,
+				'https://riviantrackr.com/2026-41/'    => 30,
+				'3'                                    => [ 'https://riviantrackr.com/r2/' => 3 ],
+				'https://xyz.r.sb/unsubscribe?foo=bar' => 5,
+			]
+		);
+		$this->assertSame( [ 'https://riviantrackr.com/2026-41/' => 30, 'https://riviantrackr.com/r2/' => 15 ], $links );
+	}
+
+	public function test_averages_weight_by_delivered_and_window_unsubscribes(): void {
+		$rows = [
+			[ 'sent_at' => 2000, 'stats' => [ 'delivered' => 100, 'opens' => 50, 'clicks' => 10, 'unsubscribes' => 2 ] ],
+			[ 'sent_at' => 1000, 'stats' => [ 'delivered' => 300, 'opens' => 90, 'clicks' => 6, 'unsubscribes' => 1 ] ],
+			[ 'sent_at' => 500, 'stats' => null ],
+		];
+		$avg  = Stats::averages( $rows, 1500 );
+		$this->assertSame( 35.0, $avg['opens'] );
+		$this->assertSame( 4.0, $avg['clicks'] );
+		$this->assertSame( 2, $avg['unsubscribes'] );
+	}
 }
