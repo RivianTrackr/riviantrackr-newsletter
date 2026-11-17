@@ -45,16 +45,22 @@ final class SignupForm {
 	}
 
 	/**
-	 * @param array<string,string>|string $atts Shortcode attributes (unused).
+	 * `layout="page"` is the centered card for the newsletter page, matching
+	 * the sign-in and register pages. The default is a box for inside articles.
+	 *
+	 * @param array<string,string>|string $atts Shortcode attributes.
 	 */
-	public function render( $atts = [] ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Shortcode signature.
+	public function render( $atts = [] ): string {
 		self::enqueue();
-		$name = (string) $this->settings->get( 'name' );
+		$name    = (string) $this->settings->get( 'name' );
+		$atts    = shortcode_atts( [ 'layout' => 'box' ], is_array( $atts ) ? $atts : [], self::SHORTCODE );
+		$is_page = 'page' === $atts['layout'];
+		$heading = $is_page ? 'h1' : 'h3';
 
 		ob_start();
 		?>
-		<div class="rtnl-signup" data-rtnl-signup>
-			<h3 class="rtnl-signup__title"><?php echo esc_html( $name ); ?></h3>
+		<div class="rtnl-signup<?php echo $is_page ? ' rtnl-signup--page' : ''; ?>" data-rtnl-signup>
+			<<?php echo esc_html( $heading ); ?> class="rtnl-signup__title"><?php echo esc_html( $name ); ?></<?php echo esc_html( $heading ); ?>>
 			<p class="rtnl-signup__desc"><?php esc_html_e( 'The week’s Rivian news, software updates and our latest stories in one short email. Every Friday morning, free.', 'riviantrackr-newsletter' ); ?></p>
 
 			<div data-rtnl-panel="accept" hidden>
@@ -65,10 +71,10 @@ final class SignupForm {
 				<?php echo $this->member_panel( wp_get_current_user() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside. ?>
 			<?php else : ?>
 				<form class="rtnl-signup__form" data-rtnl-panel="form" data-rtnl-form novalidate>
-					<label class="rtnl-sr" for="rtnl-email"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
+					<label class="<?php echo $is_page ? 'rtnl-signup__label' : 'rtnl-sr'; ?>" for="rtnl-email"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
 					<input class="rtnl-signup__input" id="rtnl-email" type="email" name="email" autocomplete="email" placeholder="<?php esc_attr_e( 'you@example.com', 'riviantrackr-newsletter' ); ?>" required>
 					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
-					<button type="submit" class="rtnl-btn"><?php esc_html_e( 'Sign up', 'riviantrackr-newsletter' ); ?></button>
+					<button type="submit" class="rtnl-btn"><?php echo $is_page ? esc_html__( 'Sign me up', 'riviantrackr-newsletter' ) : esc_html__( 'Sign up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
 				<p class="rtnl-signup__fine" data-rtnl-panel="form"><?php esc_html_e( 'We’ll send a confirmation link first. Unsubscribe any time.', 'riviantrackr-newsletter' ); ?></p>
 			<?php endif; ?>
