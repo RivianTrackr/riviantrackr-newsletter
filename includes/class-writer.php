@@ -21,7 +21,7 @@ final class Writer {
 	public const ENDPOINT = 'https://api.anthropic.com/v1/messages';
 	public const MODEL    = 'claude-opus-5-5';
 
-	public const DEFAULT_GUIDELINES = "Voice: casual enthusiast editorial. Write like a Rivian owner talking to other owners, first person (I) is fine.\nShort, plain sentences. No em dashes, no semicolons, no emoji, no hype words like game-changer or revolutionary.\nSubject line: under 60 characters, leads with the biggest story of the week, no clickbait, no ALL CAPS.\nPreview text: 60 to 110 characters that add to the subject instead of repeating it.\nIntro: 2 or 3 short paragraphs, 50 to 110 words in all. Name the two or three biggest stories and any software update by its version number. End with a line that leads into the list below. Don't list every story, the email does that.\nOnly use facts from the stories given. Never invent numbers, dates or quotes.";
+	public const DEFAULT_GUIDELINES = "Voice: casual enthusiast editorial. Write like a Rivian owner talking to other owners, first person (I) is fine.\nShort, plain sentences. No em dashes, no semicolons, no emoji, no hype words like game-changer or revolutionary.\nSubject line: under 60 characters. Lead with the biggest news of the week, not the newest story. No clickbait, no ALL CAPS.\nPreview text: 80 characters or fewer, so phones don't cut it off. Add to the subject instead of repeating it.\nIntro: 2 or 3 short paragraphs, 50 to 110 words in all. Name the two or three biggest stories and any software update by its version number. End with a line that leads into the list below. Don't list every story, the email does that.\nOnly use facts from the stories given. Never invent numbers, dates or quotes.";
 
 	public function __construct( private Settings $settings, private IssueBuilder $builder ) {}
 
@@ -115,7 +115,7 @@ final class Writer {
 
 		$prompt = 'Write the subject line, preview text and intro for this week\'s issue of ' . ( $data['name'] ?? 'the newsletter' ) . ".\n\n"
 			. "<stories>\n" . implode( "\n", $lines ) . "\n</stories>\n\n"
-			. "The stories are listed in the order they appear in the email. The first one is the lead.\n"
+			. "The stories are listed in the order they appear in the email. Pick the lead yourself: the biggest news for Rivian owners, which isn't always the first or newest.\n"
 			. 'The intro is plain text. Separate paragraphs with a blank line.';
 		if ( [] !== $past ) {
 			$prompt .= "\n\nIntros from recent issues, as edited and sent by the editor. Match their voice and length:\n\n<past_intros>\n"

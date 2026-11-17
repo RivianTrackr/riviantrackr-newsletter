@@ -86,8 +86,9 @@ final class SettingsPage {
 							/* translators: %s: list of missing settings */
 							echo esc_html( sprintf( __( 'Add %s.', 'riviantrackr-newsletter' ), implode( ', ', $missing ) ) );
 						} elseif ( is_array( $list ) ) {
+							$count = (int) ( $list['uniqueSubscribers'] ?? $list['totalSubscribers'] ?? 0 );
 							/* translators: 1: list name, 2: subscriber count */
-							echo esc_html( sprintf( __( 'Brevo list “%1$s”, %2$s subscribers.', 'riviantrackr-newsletter' ), (string) ( $list['name'] ?? '' ), number_format_i18n( (int) ( $list['uniqueSubscribers'] ?? $list['totalSubscribers'] ?? 0 ) ) ) );
+							echo esc_html( sprintf( _n( 'Brevo list “%1$s”, %2$s subscriber.', 'Brevo list “%1$s”, %2$s subscribers.', $count, 'riviantrackr-newsletter' ), (string) ( $list['name'] ?? '' ), number_format_i18n( $count ) ) );
 						} elseif ( is_wp_error( $list ) ) {
 							/* translators: %s: Brevo error */
 							echo esc_html( sprintf( __( 'Brevo says: %s', 'riviantrackr-newsletter' ), $list->get_error_message() ) );

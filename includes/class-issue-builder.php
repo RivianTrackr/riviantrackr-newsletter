@@ -15,7 +15,6 @@ final class IssueBuilder {
 
 	public const POST_TYPE    = 'rtnl_issue';
 	public const SOURCE_TYPES = [ 'news', 'post' ];
-	public const LAST_END     = 'riviantrackr_newsletter_last_window_end';
 	public const SUMMARY_MAX  = 220;
 
 	public function __construct( private Settings $settings ) {}
@@ -92,10 +91,10 @@ final class IssueBuilder {
 	 * @return int|\WP_Error Issue ID.
 	 */
 	public function create_draft( int $now ): int|\WP_Error {
-		$last  = (int) get_option( self::LAST_END, 0 );
+		$last  = self::last_window_end();
 		$start = $last > 0 && $last < $now ? $last : $now - WEEK_IN_SECONDS;
 		if ( $now - $start < HOUR_IN_SECONDS ) {
-			return new \WP_Error( 'rtnl_too_soon', __( 'A draft was already made for this week.', 'riviantrackr-newsletter' ) );
+			return new \WP_Error( 'rtnl_too_soon', __( 'This week already has a draft under Issues. Delete it to build a fresh one.', 'riviantrackr-newsletter' ) );
 		}
 
 		$ids   = $this->find( $start, $now );
@@ -117,8 +116,26 @@ final class IssueBuilder {
 		update_post_meta( $issue, '_rtnl_window_start', $start );
 		update_post_meta( $issue, '_rtnl_window_end', $now );
 		update_post_meta( $issue, '_rtnl_status', 'draft' );
-		update_option( self::LAST_END, $now, false );
 		return (int) $issue;
+	}
+
+	/**
+	 * Where the last existing issue's window ended. Deleting a draft frees
+	 * its stories for the next one.
+	 */
+	public static function last_window_end(): int {
+		$ids = get_posts(
+			[
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => [ 'draft', 'publish' ],
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_rtnl_window_end', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- A handful of issues.
+				'orderby'        => 'meta_value_num',
+				'order'          => 'DESC',
+			]
+		);
+		return $ids ? (int) get_post_meta( (int) $ids[0], '_rtnl_window_end', true ) : 0;
 	}
 
 	/**
