@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+New email layout: logo in the masthead, intro signed by Jose, a Top story block with the photo and a read link, software updates in a raised callout, and the rest as compact rows with thumbnails. One-off emails (confirm, invite, draft ready) carry the logo too.
+
 ## 0.2.4
 
 A summary whose first sentence runs past the limit keeps that whole sentence (up to 1.6 times the limit) instead of being cut mid-sentence.

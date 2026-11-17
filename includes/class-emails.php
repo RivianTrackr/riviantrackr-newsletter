@@ -22,7 +22,7 @@ final class Emails {
 		return (bool) wp_mail(
 			$to,
 			$message['subject'] ?? '',
-			Template::message( $message ),
+			Template::message( $message + [ 'logo_url' => RTNL_URL . 'assets/logo.png' ] ),
 			[ 'Content-Type: text/html; charset=UTF-8' ]
 		);
 	}

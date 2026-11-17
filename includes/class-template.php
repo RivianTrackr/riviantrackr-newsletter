@@ -80,35 +80,49 @@ final class Template {
 		$updates = (array) ( $d['updates'] ?? [] );
 		$stories = (array) ( $d['stories'] ?? [] );
 
-		$body = '';
-
-		$intro = self::paragraphs( (string) ( $d['intro'] ?? '' ), "margin:0 0 16px;font:400 16px/1.6 {$sans};color:{$c['text']};" );
-		if ( '' !== $intro ) {
-			$body .= '<tr><td class="rtnl-pad" style="padding:28px 32px 12px;">' . $intro . '</td></tr>';
-		}
-
-		if ( ! empty( $updates ) ) {
-			$body .= self::section_title( __( 'Software updates', 'riviantrackr-newsletter' ) );
-			foreach ( $updates as $item ) {
-				$body .= '<tr><td class="rtnl-pad" style="padding:0 32px 16px;">'
-					. '<a class="rtnl-h" href="' . esc_url( (string) $item['url'] ) . '" style="font:600 17px/1.35 ' . $mono . ';color:' . $c['heading'] . ';text-decoration:none;">' . esc_html( (string) $item['title'] ) . '</a>'
-					. ( '' !== (string) ( $item['summary'] ?? '' ) ? '<p class="rtnl-t2" style="margin:4px 0 0;font:400 15px/1.55 ' . $sans . ';color:' . $c['text2'] . ';">' . esc_html( (string) $item['summary'] ) . '</p>' : '' )
-					. '</td></tr>';
-			}
-		}
-
-		if ( ! empty( $stories ) ) {
-			$body .= self::section_title( __( 'This week on RivianTrackr', 'riviantrackr-newsletter' ) );
-			foreach ( array_values( $stories ) as $i => $item ) {
-				$body .= self::story( $item, 0 === $i, $i > 0 );
-			}
-		}
-
+		$body     = '';
 		$site_url = esc_url( (string) ( $d['site_url'] ?? '' ) );
-		$body    .= '<tr><td class="rtnl-pad" style="padding:12px 32px 32px;">'
+
+		// Intro, signed.
+		$intro = self::paragraphs( (string) ( $d['intro'] ?? '' ), "margin:0 0 14px;font:400 16px/1.65 {$sans};color:{$c['text']};" );
+		if ( '' !== $intro ) {
+			$sign  = (string) ( $d['signature'] ?? '' );
+			$body .= '<tr><td class="rtnl-pad" style="padding:24px 32px 8px;">' . $intro
+				. ( '' !== $sign ? '<p class="rtnl-h" style="margin:0 0 4px;font:600 15px/1.4 ' . $sans . ';color:' . $c['heading'] . ';">' . esc_html( $sign ) . '</p>' : '' )
+				. '</td></tr>';
+		}
+
+		// Top story: the lead, with its photo.
+		$lead = $stories[0] ?? null;
+		if ( null !== $lead ) {
+			$body .= self::label_row( __( 'Top story', 'riviantrackr-newsletter' ), '' !== $intro );
+			$body .= self::hero( $lead );
+		}
+
+		// Software updates: a raised callout so it reads as its own thing.
+		foreach ( $updates as $item ) {
+			$body .= '<tr><td class="rtnl-pad" style="padding:8px 32px 8px;">'
+				. '<table role="presentation" class="rtnl-raised" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:' . $c['raised'] . ';border-radius:10px;"><tr><td style="padding:18px 20px;">'
+				. '<p class="rtnl-a" style="margin:0 0 4px;font:600 13px/1.3 ' . $sans . ';color:' . $c['accent'] . ';">' . esc_html__( 'Software update', 'riviantrackr-newsletter' ) . '</p>'
+				. '<a class="rtnl-h" href="' . esc_url( (string) $item['url'] ) . '" style="font:600 22px/1.25 ' . $mono . ';color:' . $c['heading'] . ';text-decoration:none;">' . esc_html( (string) $item['title'] ) . '</a>'
+				. ( '' !== (string) ( $item['summary'] ?? '' ) ? '<p class="rtnl-t2" style="margin:8px 0 10px;font:400 15px/1.55 ' . $sans . ';color:' . $c['text2'] . ';">' . esc_html( (string) $item['summary'] ) . '</p>' : '' )
+				. '<a class="rtnl-a" href="' . esc_url( (string) $item['url'] ) . '" style="font:600 14px/1.3 ' . $sans . ';color:' . $c['accent'] . ';text-decoration:none;">' . esc_html__( 'See what’s new', 'riviantrackr-newsletter' ) . ' &rarr;</a>'
+				. '</td></tr></table></td></tr>';
+		}
+
+		// Everything else: compact rows with a thumbnail.
+		$rest = array_slice( $stories, 1 );
+		if ( [] !== $rest ) {
+			$body .= self::label_row( __( 'More this week', 'riviantrackr-newsletter' ) );
+			foreach ( array_values( $rest ) as $i => $item ) {
+				$body .= self::row( $item, $i > 0 );
+			}
+		}
+
+		$body .= '<tr><td class="rtnl-pad" align="center" style="padding:24px 32px 32px;">'
 			. '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-radius:8px;background:' . $c['gold'] . ';">'
-			. '<a href="' . $site_url . '" style="display:inline-block;padding:12px 20px;font:600 15px/1 ' . $sans . ';color:' . $c['on_gold'] . ';text-decoration:none;border-radius:8px;">'
-			. esc_html__( 'More on RivianTrackr', 'riviantrackr-newsletter' ) . '</a></td></tr></table></td></tr>';
+			. '<a href="' . $site_url . '" style="display:inline-block;padding:13px 22px;font:600 15px/1 ' . $sans . ';color:' . $c['on_gold'] . ';text-decoration:none;border-radius:8px;">'
+			. esc_html__( 'Read more on RivianTrackr', 'riviantrackr-newsletter' ) . '</a></td></tr></table></td></tr>';
 
 		$address = trim( (string) ( $d['postal_address'] ?? '' ) );
 		if ( '' !== (string) ( $d['signup_url'] ?? '' ) ) {
@@ -120,7 +134,7 @@ final class Template {
 			return self::document(
 				(string) ( $d['subject'] ?? '' ),
 				'',
-				self::masthead( (string) ( $d['name'] ?? '' ), (string) ( $d['date_label'] ?? '' ), $site_url ),
+				self::masthead( (string) ( $d['name'] ?? '' ), (string) ( $d['date_label'] ?? '' ), $site_url, (string) ( $d['logo_url'] ?? '' ) ),
 				$body,
 				$footer
 			);
@@ -136,7 +150,7 @@ final class Template {
 		return self::document(
 			(string) ( $d['subject'] ?? '' ),
 			(string) ( $d['preview_text'] ?? '' ),
-			self::masthead( (string) ( $d['name'] ?? '' ), (string) ( $d['date_label'] ?? '' ), $site_url ),
+			self::masthead( (string) ( $d['name'] ?? '' ), (string) ( $d['date_label'] ?? '' ), $site_url, (string) ( $d['logo_url'] ?? '' ) ),
 			$body,
 			$footer
 		);
@@ -162,7 +176,7 @@ final class Template {
 				. '</td></tr></table></td></tr>';
 		}
 		$footer = '' !== ( $m['footnote'] ?? '' ) ? '<p class="rtnl-m" style="margin:0;">' . esc_html( $m['footnote'] ) . '</p>' : '';
-		return self::document( $m['subject'] ?? '', '', self::masthead( $m['name'] ?? '', '', '' ), $body, $footer );
+		return self::document( $m['subject'] ?? '', '', self::masthead( $m['name'] ?? '', '', '', $m['logo_url'] ?? '' ), $body, $footer );
 	}
 
 	/**
@@ -175,51 +189,73 @@ final class Template {
 		return esc_url( $url );
 	}
 
-	private static function section_title( string $title ): string {
-		$c = self::LIGHT;
-		return '<tr><td class="rtnl-pad" style="padding:8px 32px 12px;">'
-			. '<h2 class="rtnl-h rtnl-line" style="margin:0;padding-top:20px;border-top:1px solid ' . $c['line'] . ';font:700 18px/1.3 ' . self::SANS . ';color:' . $c['heading'] . ';">' . esc_html( $title ) . '</h2>'
+	/**
+	 * A small brass section label with a rule above it.
+	 */
+	private static function label_row( string $label, bool $rule = true ): string {
+		$c     = self::LIGHT;
+		$style = $rule ? 'padding-top:20px;border-top:1px solid ' . $c['line'] . ';' : '';
+		return '<tr><td class="rtnl-pad" style="padding:' . ( $rule ? '20px' : '24px' ) . ' 32px 12px;">'
+			. '<p class="rtnl-a' . ( $rule ? ' rtnl-line' : '' ) . '" style="margin:0;' . $style . 'font:600 13px/1.3 ' . self::SANS . ';color:' . $c['accent'] . ';">' . esc_html( $label ) . '</p>'
 			. '</td></tr>';
 	}
 
 	/**
-	 * @param array<string,mixed> $item title, url, summary, image?, image_alt?, label?.
+	 * The lead story: full-width photo, big title, summary, read link.
+	 *
+	 * @param array<string,mixed> $item title, url, summary, image?, image_alt?.
 	 */
-	private static function story( array $item, bool $lead, bool $rule ): string {
-		$c       = self::LIGHT;
-		$sans    = self::SANS;
-		$url     = esc_url( (string) $item['url'] );
-		$image   = (string) ( $item['image'] ?? '' );
-		$summary = (string) ( $item['summary'] ?? '' );
-		$label   = (string) ( $item['label'] ?? '' );
-
-		$html = '<tr><td class="rtnl-pad" style="padding:0 32px 18px;">';
-		if ( $rule ) {
-			$html .= '<div class="rtnl-line" style="border-top:1px solid ' . $c['line'] . ';height:0;line-height:0;font-size:0;margin:0 0 18px;">&nbsp;</div>';
-		}
-		if ( $lead && '' !== $image ) {
-			$html .= '<a href="' . $url . '"><img src="' . esc_url( $image ) . '" width="536" alt="' . esc_attr( (string) ( $item['image_alt'] ?? '' ) ) . '" style="display:block;width:100%;max-width:536px;height:auto;border:0;border-radius:8px;margin:0 0 14px;background:' . $c['raised'] . ';"></a>';
-		}
-		if ( '' !== $label ) {
-			$html .= '<p class="rtnl-a" style="margin:0 0 4px;font:600 13px/1.3 ' . $sans . ';color:' . $c['accent'] . ';">' . esc_html( $label ) . '</p>';
-		}
-		$size  = $lead ? '21px/1.3' : '17px/1.35';
-		$html .= '<a class="rtnl-h" href="' . $url . '" style="font:700 ' . $size . ' ' . $sans . ';color:' . $c['heading'] . ';text-decoration:none;' . ( $lead ? 'letter-spacing:-0.3px;' : '' ) . '">' . esc_html( (string) $item['title'] ) . '</a>';
-		if ( '' !== $summary ) {
-			$html .= '<p class="rtnl-t2" style="margin:6px 0 0;font:400 15px/1.55 ' . $sans . ';color:' . $c['text2'] . ';">' . esc_html( $summary ) . '</p>';
-		}
-		return $html . '</td></tr>';
+	private static function hero( array $item ): string {
+		$c     = self::LIGHT;
+		$sans  = self::SANS;
+		$url   = esc_url( (string) $item['url'] );
+		$image = (string) ( $item['image'] ?? '' );
+		return '<tr><td class="rtnl-pad" style="padding:0 32px 8px;">'
+			. ( '' !== $image ? '<a href="' . $url . '"><img src="' . esc_url( $image ) . '" width="536" alt="' . esc_attr( (string) ( $item['image_alt'] ?? '' ) ) . '" style="display:block;width:100%;max-width:536px;height:auto;border:0;border-radius:10px;margin:0 0 16px;background:' . $c['raised'] . ';"></a>' : '' )
+			. '<a class="rtnl-h" href="' . $url . '" style="font:700 23px/1.25 ' . $sans . ';letter-spacing:-0.4px;color:' . $c['heading'] . ';text-decoration:none;">' . esc_html( (string) $item['title'] ) . '</a>'
+			. ( '' !== (string) ( $item['summary'] ?? '' ) ? '<p class="rtnl-t2" style="margin:8px 0 10px;font:400 15px/1.6 ' . $sans . ';color:' . $c['text2'] . ';">' . esc_html( (string) $item['summary'] ) . '</p>' : '' )
+			. '<a class="rtnl-a" href="' . $url . '" style="font:600 14px/1.3 ' . $sans . ';color:' . $c['accent'] . ';text-decoration:none;">' . esc_html__( 'Read the story', 'riviantrackr-newsletter' ) . ' &rarr;</a>'
+			. '</td></tr>';
 	}
 
-	private static function masthead( string $name, string $date_label, string $site_url ): string {
+	/**
+	 * A compact story row: title and short summary, thumbnail on the right.
+	 *
+	 * @param array<string,mixed> $item title, url, summary, short?, thumb?.
+	 */
+	private static function row( array $item, bool $rule ): string {
+		$c     = self::LIGHT;
+		$sans  = self::SANS;
+		$url   = esc_url( (string) $item['url'] );
+		$thumb = (string) ( $item['thumb'] ?? '' );
+		$text  = (string) ( $item['short'] ?? $item['summary'] ?? '' );
+		$html  = '<tr><td class="rtnl-pad" style="padding:0 32px;">'
+			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"' . ( $rule ? ' class="rtnl-line" style="border-top:1px solid ' . $c['line'] . ';"' : '' ) . '><tr>'
+			. '<td valign="top" style="padding:16px 0;">'
+			. '<a class="rtnl-h" href="' . $url . '" style="font:600 16px/1.35 ' . $sans . ';color:' . $c['heading'] . ';text-decoration:none;">' . esc_html( (string) $item['title'] ) . '</a>'
+			. ( '' !== $text ? '<p class="rtnl-t2" style="margin:6px 0 0;font:400 14px/1.5 ' . $sans . ';color:' . $c['text2'] . ';">' . esc_html( $text ) . '</p>' : '' )
+			. '</td>';
+		if ( '' !== $thumb ) {
+			$html .= '<td valign="top" width="112" style="width:112px;padding:16px 0 16px 16px;">'
+				. '<a href="' . $url . '"><img src="' . esc_url( $thumb ) . '" width="112" alt="" style="display:block;width:112px;height:auto;border:0;border-radius:8px;background:' . $c['raised'] . ';"></a></td>';
+		}
+		return $html . '</tr></table></td></tr>';
+	}
+
+	private static function masthead( string $name, string $date_label, string $site_url, string $logo_url = '' ): string {
 		$c    = self::LIGHT;
 		$name = '' !== $name ? esc_html( $name ) : 'RivianTrackr';
 		$name = '' !== $site_url ? '<a class="rtnl-h" href="' . $site_url . '" style="color:' . $c['heading'] . ';text-decoration:none;">' . $name . '</a>' : $name;
-		return '<tr><td class="rtnl-pad" style="padding:24px 32px 0;">'
+		$logo = '' !== $logo_url
+			? '<td width="40" valign="middle" style="width:40px;padding-right:12px;">' . ( '' !== $site_url ? '<a href="' . $site_url . '">' : '' ) . '<img src="' . esc_url( $logo_url ) . '" width="40" height="40" alt="RivianTrackr" style="display:block;width:40px;height:40px;border:0;">' . ( '' !== $site_url ? '</a>' : '' ) . '</td>'
+			: '';
+		return '<tr><td class="rtnl-pad" style="padding:22px 32px 18px;">'
 			. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-			. '<td class="rtnl-h" style="font:700 20px/1.2 ' . self::SANS . ';letter-spacing:-0.3px;color:' . $c['heading'] . ';">' . $name . '</td>'
-			. ( '' !== $date_label ? '<td align="right" class="rtnl-m" style="font:500 13px/1.2 ' . self::MONO . ';color:' . $c['muted'] . ';white-space:nowrap;">' . esc_html( $date_label ) . '</td>' : '' )
-			. '</tr></table></td></tr>';
+			. $logo
+			. '<td valign="middle" class="rtnl-h" style="font:700 19px/1.2 ' . self::SANS . ';letter-spacing:-0.3px;color:' . $c['heading'] . ';">' . $name . '</td>'
+			. ( '' !== $date_label ? '<td align="right" valign="middle" class="rtnl-m" style="font:500 13px/1.2 ' . self::MONO . ';color:' . $c['muted'] . ';white-space:nowrap;">' . esc_html( $date_label ) . '</td>' : '' )
+			. '</tr></table></td></tr>'
+			. '<tr><td class="rtnl-pad" style="padding:0 32px;"><div class="rtnl-line" style="border-top:1px solid ' . $c['line'] . ';height:0;line-height:0;font-size:0;">&nbsp;</div></td></tr>';
 	}
 
 	private static function document( string $subject, string $preview, string $masthead, string $body, string $footer ): string {
@@ -237,7 +273,8 @@ final class Template {
 			. ".rtnl-t2{color:{$d['text2']} !important}"
 			. ".rtnl-m{color:{$d['muted']} !important}"
 			. ".rtnl-a{color:{$d['accent']} !important}"
-			. ".rtnl-line{border-color:{$d['line']} !important}";
+			. ".rtnl-line{border-color:{$d['line']} !important}"
+			. ".rtnl-raised{background:{$d['raised']} !important}";
 		$ogsc     = (string) preg_replace( '/(^|\}|,)\./', '$1[data-ogsc] .', $dark_css );
 
 		return '<!DOCTYPE html><html lang="en"><head>'

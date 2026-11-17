@@ -236,6 +236,8 @@ final class IssueBuilder {
 			'url'       => (string) get_permalink( $post ),
 			'summary'   => self::summarize( (string) $summary ),
 			'image'     => $thumb ? (string) wp_get_attachment_image_url( $thumb, 'large' ) : '',
+			'thumb'     => $thumb ? (string) wp_get_attachment_image_url( $thumb, 'medium' ) : '',
+			'short'     => self::summarize( (string) $summary, 140 ),
 			'image_alt' => $thumb ? (string) get_post_meta( $thumb, '_wp_attachment_image_alt', true ) : '',
 			'is_update' => 'post' === $post->post_type && (bool) get_post_meta( $post->ID, '_rsu_is_update', true ),
 			'date'      => (int) get_post_time( 'U', true, $post ),
@@ -296,6 +298,9 @@ final class IssueBuilder {
 			'updates'         => $parts['updates'],
 			'stories'         => $parts['stories'],
 			'site_url'        => home_url( '/' ),
+			'logo_url'        => RTNL_URL . 'assets/logo.png',
+			// Sign the intro with the first word of the from name ("Jose at RivianTrackr" → Jose).
+			'signature'       => (string) strtok( (string) $this->settings->get( 'sender_name' ), ' ' ),
 			'postal_address'  => (string) $this->settings->get( 'postal_address' ),
 			/* translators: %s: newsletter name */
 			'reason'          => sprintf( __( 'You’re getting %s because you signed up at riviantrackr.com.', 'riviantrackr-newsletter' ), $name ),
