@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+Fixed admin styles: a cut-off rule in admin.css stopped the dashboard table and the WordPress dashboard widget from being styled.
+
+Brevo no longer adds its default "If you are not able to see this mail, click here" header or default footer around the email.
+
+Dashboard: new signups and unsubscribes over 30 days, average opens and clicks over the last 4 issues, invites accepted, bounces per issue, the most clicked links in the last issue, and where signups came from.
+
 ## 0.3.0
 
 New email layout: logo in the masthead, intro signed by Jose, a Top story block with the photo and a read link, software updates in a raised callout, and the rest as compact rows with thumbnails. One-off emails (confirm, invite, draft ready) carry the logo too.

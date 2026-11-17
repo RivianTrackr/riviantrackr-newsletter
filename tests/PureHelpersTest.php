@@ -69,6 +69,8 @@ final class PureHelpersTest extends TestCase {
 		$this->assertSame( 'Jose at RivianTrackr', $payload['sender']['name'] );
 		$this->assertSame( '2026-11-20T09:00:00-05:00', $payload['scheduledAt'] );
 		$this->assertArrayNotHasKey( 'replyTo', $payload );
+		$this->assertSame( '<!-- -->', $payload['header'] );
+		$this->assertSame( '<!-- -->', $payload['footer'] );
 		$this->assertArrayNotHasKey( 'scheduledAt', Brevo::campaign_payload( [ 'name' => 'W', 'subject' => 'S', 'html' => '' ], $options ) );
 	}
 

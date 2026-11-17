@@ -445,30 +445,6 @@
 	color: #c41e3a;
 }
 
-.rtnl-progress {
-	width: 100%;
-	max-width: 640px;
-	height: 8px;
-	border-radius: 9999px;
-	background: var(--rtnl-bg-light);
-	overflow: hidden;
-}
-
-.rtnl-progress__bar {
-	display: block;
-	width: 0;
-	height: 100%;
-	border-radius: 9999px;
-	background: var(--rtnl-action);
-	transition: width 0.3s ease;
-}
-
-.rtnl-log {
-	max-width: 640px;
-	max-height: 220px;
-	margin: 12px 0 0;
-	padding: 10px 14px;
-
 /* Dashboard */
 .rtnl-stats {
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
