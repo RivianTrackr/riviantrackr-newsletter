@@ -42,6 +42,62 @@ html[data-rt-theme="dark"] .rtnl-signup {
 	padding: 24px;
 }
 
+/* layout="sidebar": matches the sidebar's Tire Guide and Accessory Guide cards. */
+.rtnl-signup.rtnl-signup--sidebar {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	padding: 16px;
+}
+
+.rtnl-signup.rtnl-signup--sidebar > * {
+	margin: 0;
+}
+
+.rtnl-signup--sidebar .rtnl-signup__title {
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.rtnl-signup--sidebar .rtnl-signup__desc {
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.rtnl-signup--sidebar .rtnl-signup__form {
+	flex-direction: column;
+}
+
+.rtnl-signup--sidebar .rtnl-btn {
+	width: 100%;
+}
+
+.rtnl-signup--sidebar .rtnl-signup__fine {
+	margin: 0;
+	font-size: 12px;
+}
+
+.rtnl-signup__eyebrow {
+	color: var(--rtnl-heading);
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.6;
+}
+
+.rtnl-signup__more {
+	color: var(--rtc-accent-text, #8a5800);
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.rtnl-signup__more:hover {
+	color: var(--rtc-accent-text-hover, #6f4700);
+}
+
 .rtnl-signup--page .rtnl-signup__title {
 	font-size: 24px;
 	letter-spacing: -0.3px;

@@ -26,6 +26,8 @@ final class Subscriptions {
 	public const IP_LIMIT    = 5;  // Signup requests per hour per IP.
 	public const EMAIL_LIMIT = 3;  // Signup requests per hour per address.
 
+	public const STATUS_CACHE = 'rtnl_status_';
+
 	public function __construct(
 		private Settings $settings,
 		private Brevo $brevo,
@@ -170,6 +172,9 @@ final class Subscriptions {
 			return self::public_error( $done );
 		}
 		self::log( $email, $user_id, 'subscribe', $source, $ip );
+		if ( $user_id > 0 ) {
+			set_transient( self::STATUS_CACHE . $user_id, '1', 12 * HOUR_IN_SECONDS );
+		}
 		return true;
 	}
 
@@ -179,7 +184,28 @@ final class Subscriptions {
 			return self::public_error( $done );
 		}
 		self::log( $email, $user_id, 'unsubscribe', $source, $ip );
+		if ( $user_id > 0 ) {
+			set_transient( self::STATUS_CACHE . $user_id, '0', 12 * HOUR_IN_SECONDS );
+		}
 		return true;
+	}
+
+	/**
+	 * Member status for the sidebar card, cached 12 hours so the sidebar
+	 * doesn't call Brevo on every page view. Changes made on the site update
+	 * it straight away; an unsubscribe from an email shows within 12 hours.
+	 */
+	public function is_subscribed_cached( \WP_User $user ): bool|\WP_Error {
+		$key    = self::STATUS_CACHE . $user->ID;
+		$cached = get_transient( $key );
+		if ( '1' === $cached || '0' === $cached ) {
+			return '1' === $cached;
+		}
+		$status = $this->is_subscribed( $user->user_email );
+		if ( ! is_wp_error( $status ) ) {
+			set_transient( $key, $status ? '1' : '0', 12 * HOUR_IN_SECONDS );
+		}
+		return $status;
 	}
 
 	public function is_subscribed( string $email ): bool|\WP_Error {
