@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+Sidebar card: subscribed members see "You’re subscribed" with a link to manage it on their account page, in place of no card.
+
 ## 0.1.3
 
 `[riviantrackr_newsletter layout="sidebar"]`: a compact card that matches the sidebar guide cards. Hidden for members who already subscribe (status cached 12 hours).

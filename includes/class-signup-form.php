@@ -106,16 +106,23 @@ final class SignupForm {
 
 	/**
 	 * The sidebar card. Signed-out visitors get the same HTML (cache-safe).
-	 * Signed-in members who already subscribe see nothing, the rest get a
+	 * Signed-in members who subscribe see a "You're subscribed" card that
+	 * points to the Newsletter tab on their account page. The rest get a
 	 * one-click Subscribe button.
 	 */
 	private function render_sidebar(): string {
 		$member = is_user_logged_in() ? wp_get_current_user() : null;
-		if ( $member instanceof \WP_User && false !== $this->subscriptions->is_subscribed_cached( $member ) ) {
-			return '';
+		$page   = $this->settings->page_url();
+		if ( $member instanceof \WP_User ) {
+			$status = $this->subscriptions->is_subscribed_cached( $member );
+			if ( is_wp_error( $status ) ) {
+				return '';
+			}
+			if ( true === $status ) {
+				return $this->render_sidebar_subscribed( $page );
+			}
 		}
-		$id   = wp_unique_id( 'rtnl-email-' );
-		$page = $this->settings->page_url();
+		$id = wp_unique_id( 'rtnl-email-' );
 
 		ob_start();
 		?>
@@ -145,6 +152,38 @@ final class SignupForm {
 			<p class="rtnl-signup__msg" data-rtnl-msg role="status" aria-live="polite" hidden></p>
 			<template data-rtnl-text="sent"><?php esc_html_e( 'Check your inbox for a confirmation link.', 'riviantrackr-newsletter' ); ?></template>
 			<template data-rtnl-text="accepted"><?php esc_html_e( 'You’re in. See you Friday.', 'riviantrackr-newsletter' ); ?></template>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Where members manage the newsletter: the Newsletter tab of the account
+	 * page (passkeys plugin), else the newsletter page.
+	 */
+	private function manage_url( string $page ): string {
+		$options = get_option( 'riviantrackr_passkeys_options', [] );
+		$account = is_array( $options ) ? (int) ( $options['account_page_id'] ?? 0 ) : 0;
+		if ( $account > 0 && 'publish' === get_post_status( $account ) ) {
+			return (string) get_permalink( $account ) . '#newsletter';
+		}
+		return $page;
+	}
+
+	private function render_sidebar_subscribed( string $page ): string {
+		$manage = $this->manage_url( $page );
+		ob_start();
+		?>
+		<div class="rtnl-signup rtnl-signup--sidebar">
+			<p class="rtnl-signup__eyebrow"><?php echo esc_html( (string) $this->settings->get( 'name' ) ); ?></p>
+			<h3 class="rtnl-signup__title"><?php esc_html_e( 'You’re subscribed', 'riviantrackr-newsletter' ); ?></h3>
+			<p class="rtnl-signup__desc"><?php esc_html_e( 'The next issue lands in your inbox Friday morning.', 'riviantrackr-newsletter' ); ?></p>
+			<?php if ( '' !== $page && IssueBuilder::has_published() ) : ?>
+				<a class="rtnl-signup__more" href="<?php echo esc_url( IssuePages::latest_url( $page ) ); ?>"><?php esc_html_e( 'Read the latest issue', 'riviantrackr-newsletter' ); ?></a>
+			<?php endif; ?>
+			<?php if ( '' !== $manage ) : ?>
+				<a class="rtnl-signup__more" href="<?php echo esc_url( $manage ); ?>"><?php esc_html_e( 'Manage your subscription', 'riviantrackr-newsletter' ); ?></a>
+			<?php endif; ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
