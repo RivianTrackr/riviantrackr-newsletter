@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  php-tests:
+    name: PHPUnit (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+      - name: Lint PHP files
+        run: |
+          php -l riviantrackr-newsletter.php
+          php -l uninstall.php
+          find includes/ -name '*.php' -exec php -l {} \;
+      - run: composer install --no-interaction --prefer-dist
+      - run: vendor/bin/phpunit

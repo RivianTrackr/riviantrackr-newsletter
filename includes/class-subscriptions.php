@@ -1,0 +1,234 @@
+<?php
+declare(strict_types=1);
+
+namespace RivianTrackr\Newsletter;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Who gets the newsletter. Brevo's list is the source of truth (so an
+ * unsubscribe link in any issue is reflected everywhere). Every opt-in and
+ * opt-out is also logged here with when, where and a hashed IP.
+ *
+ * Opt-in paths:
+ * - The signup form: double opt-in, a signed confirm link by email.
+ * - Members on their account page: their address is already verified.
+ * - The one-time member invite: a signed link tied to the member and address.
+ * Both links land on the newsletter page, where a button does the opt-in,
+ * so link scanners that open emails can't subscribe anyone.
+ */
+final class Subscriptions {
+
+	public const CONFIRM_TTL = 3 * DAY_IN_SECONDS;
+	public const INVITE_TTL  = 30 * DAY_IN_SECONDS;
+	public const IP_LIMIT    = 5;  // Signup requests per hour per IP.
+	public const EMAIL_LIMIT = 3;  // Signup requests per hour per address.
+
+	public function __construct(
+		private Settings $settings,
+		private Brevo $brevo,
+		private Tokens $tokens
+	) {}
+
+	public function register_hooks(): void {
+		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
+	}
+
+	public function register_routes(): void {
+		register_rest_route(
+			RTNL_REST_NAMESPACE,
+			'/subscribe',
+			[
+				'methods'             => 'POST',
+				'permission_callback' => '__return_true',
+				'callback'            => [ $this, 'rest_subscribe' ],
+			]
+		);
+		register_rest_route(
+			RTNL_REST_NAMESPACE,
+			'/accept',
+			[
+				'methods'             => 'POST',
+				'permission_callback' => '__return_true',
+				'callback'            => [ $this, 'rest_accept' ],
+			]
+		);
+		register_rest_route(
+			RTNL_REST_NAMESPACE,
+			'/me',
+			[
+				'methods'             => 'POST',
+				'permission_callback' => static fn(): bool => is_user_logged_in(),
+				'callback'            => [ $this, 'rest_me' ],
+			]
+		);
+	}
+
+	/**
+	 * POST /subscribe from the signup form.
+	 */
+	public function rest_subscribe( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		// Honeypot: bots fill every field. Look successful, do nothing.
+		if ( '' !== trim( (string) $request->get_param( 'website' ) ) ) {
+			return new \WP_REST_Response( [ 'ok' => true ] );
+		}
+		$result = $this->request_signup( (string) $request->get_param( 'email' ), self::client_ip() );
+		return is_wp_error( $result ) ? $result : new \WP_REST_Response( [ 'ok' => true ] );
+	}
+
+	public function rest_accept( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$result = $this->accept( (string) $request->get_param( 'token' ), self::client_ip() );
+		return is_wp_error( $result ) ? $result : new \WP_REST_Response( [ 'ok' => true ] );
+	}
+
+	public function rest_me( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$user = wp_get_current_user();
+		$want = rest_sanitize_boolean( $request->get_param( 'subscribed' ) );
+		$ip   = self::client_ip();
+		$done = $want
+			? $this->subscribe( $user->user_email, 'account', $user->ID, $ip )
+			: $this->unsubscribe( $user->user_email, 'account', $user->ID, $ip );
+		return is_wp_error( $done ) ? $done : new \WP_REST_Response( [ 'subscribed' => $want ] );
+	}
+
+	// ---- opt-in / opt-out ---------------------------------------------------
+
+	/**
+	 * Signup form: rate-limit, then email a confirm link. Says the same thing
+	 * whether or not the address is already on the list.
+	 */
+	public function request_signup( string $email, string $ip ): true|\WP_Error {
+		$email = sanitize_email( $email );
+		if ( ! is_email( $email ) ) {
+			return new \WP_Error( 'rtnl_email', __( 'Enter a valid email address.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
+		}
+		if ( [] !== $this->settings->missing_for_signup() ) {
+			return new \WP_Error( 'rtnl_unavailable', __( 'Signups are not open yet. Please try again soon.', 'riviantrackr-newsletter' ), [ 'status' => 503 ] );
+		}
+		if ( ! self::hit( 'ip_' . self::hash( $ip ), self::IP_LIMIT ) || ! self::hit( 'em_' . self::hash( strtolower( $email ) ), self::EMAIL_LIMIT ) ) {
+			return new \WP_Error( 'rtnl_rate', __( 'Too many tries. Please wait an hour and try again.', 'riviantrackr-newsletter' ), [ 'status' => 429 ] );
+		}
+
+		$link = add_query_arg(
+			'rtnl_confirm',
+			$this->tokens->make( [ 'e' => strtolower( $email ) ], self::CONFIRM_TTL, time() ),
+			$this->settings->page_url()
+		);
+		$name = (string) $this->settings->get( 'name' );
+		$sent = Emails::send(
+			$email,
+			[
+				'name'     => $name,
+				/* translators: %s: newsletter name */
+				'subject'  => sprintf( __( 'Confirm your %s signup', 'riviantrackr-newsletter' ), $name ),
+				'heading'  => __( 'One click and you’re in', 'riviantrackr-newsletter' ),
+				/* translators: %s: newsletter name */
+				'body'     => sprintf( __( "Thanks for signing up for %s. Every Friday morning you'll get the week's Rivian news, software updates and our latest stories in one short email.\n\nConfirm it's you with the button below.", 'riviantrackr-newsletter' ), $name ),
+				'button'   => __( 'Confirm my email', 'riviantrackr-newsletter' ),
+				'url'      => $link,
+				'footnote' => __( 'Didn’t sign up? Ignore this email and you won’t hear from us.', 'riviantrackr-newsletter' ),
+			]
+		);
+		return $sent ? true : new \WP_Error( 'rtnl_mail', __( 'We couldn’t send the confirmation email. Please try again.', 'riviantrackr-newsletter' ), [ 'status' => 500 ] );
+	}
+
+	/**
+	 * A confirm or invite link's button was pressed.
+	 */
+	public function accept( string $token, string $ip ): true|\WP_Error {
+		$data = $this->tokens->read( $token, time() );
+		if ( null === $data ) {
+			return new \WP_Error( 'rtnl_token', __( 'This link has expired or isn’t valid. Sign up again below.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
+		}
+		if ( isset( $data['e'] ) ) {
+			return $this->subscribe( (string) $data['e'], 'form', 0, $ip );
+		}
+		$user = isset( $data['u'] ) ? get_userdata( (int) $data['u'] ) : false;
+		if ( ! $user instanceof \WP_User || ! hash_equals( (string) ( $data['m'] ?? '' ), self::hash( strtolower( $user->user_email ) ) ) ) {
+			return new \WP_Error( 'rtnl_token', __( 'This link has expired or isn’t valid. Sign up again below.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
+		}
+		return $this->subscribe( $user->user_email, 'invite', $user->ID, $ip );
+	}
+
+	public function invite_link( \WP_User $user ): string {
+		$token = $this->tokens->make(
+			[
+				'u' => $user->ID,
+				'm' => self::hash( strtolower( $user->user_email ) ),
+			],
+			self::INVITE_TTL,
+			time()
+		);
+		return add_query_arg( 'rtnl_invite', $token, $this->settings->page_url() );
+	}
+
+	public function subscribe( string $email, string $source, int $user_id, string $ip ): true|\WP_Error {
+		$done = $this->brevo->subscribe( $email, (int) $this->settings->get( 'list_id' ) );
+		if ( is_wp_error( $done ) ) {
+			return self::public_error( $done );
+		}
+		self::log( $email, $user_id, 'subscribe', $source, $ip );
+		return true;
+	}
+
+	public function unsubscribe( string $email, string $source, int $user_id, string $ip ): true|\WP_Error {
+		$done = $this->brevo->unsubscribe( $email, (int) $this->settings->get( 'list_id' ) );
+		if ( is_wp_error( $done ) ) {
+			return self::public_error( $done );
+		}
+		self::log( $email, $user_id, 'unsubscribe', $source, $ip );
+		return true;
+	}
+
+	public function is_subscribed( string $email ): bool|\WP_Error {
+		return $this->brevo->is_subscribed( $email, (int) $this->settings->get( 'list_id' ) );
+	}
+
+	/**
+	 * Brevo's own message goes to the server log, the reader gets a plain one.
+	 */
+	private static function public_error( \WP_Error $error ): \WP_Error {
+		error_log( 'RivianTrackr Newsletter: Brevo error: ' . $error->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Operational log.
+		return new \WP_Error( 'rtnl_brevo', __( 'Something went wrong on our end. Please try again in a minute.', 'riviantrackr-newsletter' ), [ 'status' => 502 ] );
+	}
+
+	public static function log( string $email, int $user_id, string $action, string $source, string $ip ): void {
+		global $wpdb;
+		$wpdb->insert(
+			Installer::table(),
+			[
+				'email'      => strtolower( $email ),
+				'user_id'    => $user_id,
+				'action'     => $action,
+				'source'     => $source,
+				'ip_hash'    => '' !== $ip ? self::hash( $ip ) : '',
+				'created_at' => gmdate( 'Y-m-d H:i:s' ),
+			],
+			[ '%s', '%d', '%s', '%s', '%s', '%s' ]
+		);
+	}
+
+	public static function hash( string $value ): string {
+		return hash_hmac( 'sha256', $value, wp_salt( 'nonce' ) );
+	}
+
+	/** Counts a hit; false once the hourly limit is reached. */
+	private static function hit( string $key, int $limit ): bool {
+		$key   = 'rtnl_rl_' . substr( $key, 0, 40 );
+		$count = (int) get_transient( $key );
+		if ( $count >= $limit ) {
+			return false;
+		}
+		set_transient( $key, $count + 1, HOUR_IN_SECONDS );
+		return true;
+	}
+
+	/** Cloudflare sits in front with authenticated origin pulls, so its header is trustworthy. */
+	public static function client_ip(): string {
+		$raw = isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ? wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) : wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated below.
+		$ip  = filter_var( (string) $raw, FILTER_VALIDATE_IP );
+		return false !== $ip ? (string) $ip : '';
+	}
+}

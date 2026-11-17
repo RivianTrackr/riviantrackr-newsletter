@@ -1,0 +1,194 @@
+/*
+ * RivianTrackr Weekly signup box. Built on the site's color-mode tokens
+ * (--rtc-*, set on html[data-rt-theme]), so it follows light and dark.
+ * Fallbacks are the light values.
+ */
+.rtnl-signup {
+	--rtnl-card: var(--rtc-card, #ffffff);
+	--rtnl-raised: var(--rtc-raised, #eeece7);
+	--rtnl-line: var(--rtc-line, #e3e0d9);
+	--rtnl-line-strong: var(--rtc-line-strong, #cdc9c1);
+	--rtnl-heading: var(--rtc-heading, #121316);
+	--rtnl-text: var(--rtc-text, #1a1c20);
+	--rtnl-text-2: var(--rtc-text-2, #53565c);
+	--rtnl-muted: var(--rtc-muted, #686b71);
+	--rtnl-gold: var(--rtc-gold, #fba919);
+	--rtnl-on-gold: var(--rtc-on-gold, #15130e);
+	--rtnl-error: #c4281c;
+
+	box-sizing: border-box;
+	color: var(--rtnl-text);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+html[data-rt-theme="dark"] .rtnl-signup {
+	--rtnl-error: #ef4444;
+}
+
+/* Standalone box. On the account page the card styling comes from there. */
+.rtnl-signup:not(.rtnl-signup--tab) {
+	max-width: 560px;
+	margin: 24px 0;
+	padding: 20px 24px;
+	background: var(--rtnl-card);
+	border: 1px solid var(--rtnl-line);
+	border-radius: 12px;
+}
+
+.rtnl-signup__title {
+	margin: 0 0 6px;
+	color: var(--rtnl-heading);
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.3;
+}
+
+.rtnl-signup__desc {
+	margin: 0 0 16px;
+	color: var(--rtnl-text-2);
+	font-size: 15px;
+	line-height: 1.55;
+}
+
+.rtnl-signup__form {
+	display: flex;
+	gap: 8px;
+}
+
+.rtnl-signup__input {
+	flex: 1;
+	min-width: 0;
+	height: 44px;
+	padding: 0 12px;
+	background: var(--rtnl-raised);
+	border: 1px solid var(--rtnl-line);
+	border-radius: 8px;
+	color: var(--rtnl-text);
+	font: inherit;
+	font-size: 15px;
+	transition: border-color 0.15s ease;
+}
+
+.rtnl-signup__input::placeholder {
+	color: var(--rtnl-muted);
+}
+
+.rtnl-signup__input:hover {
+	border-color: var(--rtnl-line-strong);
+}
+
+.rtnl-signup__input:focus {
+	border-color: var(--rtnl-gold);
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--rtnl-gold) 25%, transparent);
+}
+
+.rtnl-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	height: 44px;
+	padding: 0 18px;
+	background: var(--rtnl-gold);
+	border: 1px solid var(--rtnl-gold);
+	border-radius: 8px;
+	color: var(--rtnl-on-gold);
+	font: inherit;
+	font-size: 15px;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.rtnl-btn:active {
+	transform: scale(0.97);
+}
+
+.rtnl-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.rtnl-btn--secondary {
+	background: transparent;
+	border-color: var(--rtnl-line-strong);
+	color: var(--rtnl-text);
+}
+
+.rtnl-btn--secondary:hover {
+	background: var(--rtnl-raised);
+}
+
+.rtnl-btn:focus-visible,
+.rtnl-signup__input:focus-visible {
+	outline: 2px solid var(--rtnl-gold);
+	outline-offset: 2px;
+}
+
+.rtnl-signup__fine {
+	margin: 10px 0 0;
+	color: var(--rtnl-muted);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.rtnl-signup__member .rtnl-signup__fine {
+	margin: 0 0 12px;
+	color: var(--rtnl-text-2);
+	font-size: 14px;
+}
+
+.rtnl-signup__msg {
+	margin: 12px 0 0;
+	color: var(--rtnl-text);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.rtnl-signup__msg--error {
+	color: var(--rtnl-error);
+}
+
+.rtnl-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.rtnl-hp {
+	position: absolute;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+[data-rtnl-signup] [hidden] {
+	display: none !important;
+}
+
+@media (max-width: 480px) {
+	.rtnl-signup:not(.rtnl-signup--tab) {
+		padding: 16px;
+	}
+
+	.rtnl-signup__form {
+		flex-direction: column;
+	}
+
+	.rtnl-btn {
+		width: 100%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.rtnl-btn,
+	.rtnl-signup__input {
+		transition: none;
+	}
+}
