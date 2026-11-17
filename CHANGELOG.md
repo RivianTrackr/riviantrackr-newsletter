@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+Deleting a draft frees its week, so "Build a draft now" works again right away. The draft window now follows the newest existing issue instead of a stored option.
+
 ## 0.2.0
 
 - Newsletter → Dashboard: subscribers, net signups, opens and clicks per issue from Brevo. A small widget on the WordPress dashboard.
