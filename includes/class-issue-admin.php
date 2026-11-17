@@ -20,7 +20,8 @@ final class IssueAdmin {
 	public function __construct(
 		private Settings $settings,
 		private IssueBuilder $builder,
-		private Brevo $brevo
+		private Brevo $brevo,
+		private Writer $writer
 	) {}
 
 	public function register_hooks(): void {
@@ -62,6 +63,22 @@ final class IssueAdmin {
 			<label for="rtnl-preview-text"><strong><?php esc_html_e( 'Preview text', 'riviantrackr-newsletter' ); ?></strong></label><br>
 			<input type="text" id="rtnl-preview-text" name="rtnl_preview" class="large-text" maxlength="150" value="<?php echo esc_attr( (string) get_post_meta( $post->ID, '_rtnl_preview', true ) ); ?>" placeholder="<?php esc_attr_e( 'Shown after the subject in the inbox. Empty uses the top story’s summary.', 'riviantrackr-newsletter' ); ?>">
 		</p>
+		<?php if ( Writer::available() && current_user_can( 'manage_options' ) && 'draft' === self::status( $post->ID ) ) : ?>
+			<p>
+				<button type="submit" name="rtnl_action" value="write" class="button" onclick="return ! document.getElementById('rtnl-intro').value.trim() || confirm('<?php echo esc_js( __( 'Replace the subject, preview text and intro with a new version from Claude?', 'riviantrackr-newsletter' ) ); ?>');"><?php esc_html_e( 'Write with Claude', 'riviantrackr-newsletter' ); ?></button>
+				<span class="description">
+					<?php
+					$written = (int) get_post_meta( $post->ID, '_rtnl_ai_written', true );
+					echo esc_html(
+						$written
+							/* translators: %s: time */
+							? sprintf( __( 'Claude last wrote these %s. Uses your writing guidelines and the stories checked below.', 'riviantrackr-newsletter' ), wp_date( 'D g:i A', $written ) )
+							: __( 'Writes the subject, preview text and intro from the stories checked below, using your writing guidelines.', 'riviantrackr-newsletter' )
+					);
+					?>
+				</span>
+			</p>
+		<?php endif; ?>
 		<?php
 	}
 
@@ -234,6 +251,7 @@ final class IssueAdmin {
 			'schedule' => $this->go( $post_id, true ),
 			'send'     => $this->go( $post_id, false ),
 			'cancel'   => $this->cancel( $post_id ),
+			'write'    => $this->write( $post_id ),
 			default    => new \WP_Error( 'rtnl_action', __( 'Unknown action.', 'riviantrackr-newsletter' ) ),
 		};
 		add_action( 'save_post_' . IssueBuilder::POST_TYPE, [ $this, 'save' ] );
@@ -333,6 +351,14 @@ final class IssueAdmin {
 			/* translators: %s: send time */
 			? sprintf( __( 'Scheduled for %s.', 'riviantrackr-newsletter' ), Schedule::label( $when ) )
 			: __( 'Sent. Brevo is delivering it now.', 'riviantrackr-newsletter' );
+	}
+
+	private function write( int $post_id ): string|\WP_Error {
+		if ( 'draft' !== self::status( $post_id ) ) {
+			return new \WP_Error( 'rtnl_state', __( 'This issue is already scheduled or sent.', 'riviantrackr-newsletter' ) );
+		}
+		$done = $this->writer->write( $post_id );
+		return is_wp_error( $done ) ? $done : __( 'Claude wrote a new subject, preview text and intro. Edit anything you like, then save.', 'riviantrackr-newsletter' );
 	}
 
 	private function cancel( int $post_id ): string|\WP_Error {

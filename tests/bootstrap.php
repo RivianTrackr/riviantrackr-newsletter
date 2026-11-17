@@ -83,3 +83,15 @@ function wp_timezone() {
 function wp_date( $format, $timestamp = null ) {
 	return ( new DateTimeImmutable( '@' . ( $timestamp ?? time() ) ) )->setTimezone( wp_timezone() )->format( $format );
 }
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		public function __construct( public string $code = '', public string $message = '', public $data = null ) {}
+		public function get_error_message(): string {
+			return $this->message;
+		}
+		public function get_error_data() {
+			return $this->data;
+		}
+	}
+}
