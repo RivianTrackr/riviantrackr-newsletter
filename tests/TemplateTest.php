@@ -34,11 +34,21 @@ final class TemplateTest extends TestCase {
 
 	public function test_contains_sections_and_escapes_titles(): void {
 		$html = Template::issue( $this->issue() );
-		$this->assertStringContainsString( 'Software updates', $html );
-		$this->assertStringContainsString( 'This week on RivianTrackr', $html );
+		$this->assertStringContainsString( '>Software update</p>', $html );
+		$this->assertStringContainsString( '>Top story</p>', $html );
+		$this->assertStringContainsString( '>More this week</p>', $html );
 		$this->assertStringContainsString( 'R2 wins &lt;SUV&gt; of the Year', $html );
 		$this->assertStringNotContainsString( '<SUV>', $html );
 		$this->assertStringContainsString( '2026.41', $html );
+	}
+
+	public function test_logo_signature_and_thumbnails(): void {
+		$stories                = $this->issue()['stories'];
+		$stories[1]['thumb']    = 'https://riviantrackr.com/a-300x169.jpg';
+		$html                   = Template::issue( $this->issue( [ 'stories' => $stories, 'logo_url' => 'https://riviantrackr.com/logo.png', 'signature' => 'Jose' ] ) );
+		$this->assertStringContainsString( 'src="https://riviantrackr.com/logo.png"', $html );
+		$this->assertStringContainsString( '>Jose</p>', $html );
+		$this->assertStringContainsString( 'src="https://riviantrackr.com/a-300x169.jpg" width="112"', $html );
 	}
 
 	public function test_brevo_merge_tags_survive_escaping(): void {
@@ -63,8 +73,8 @@ final class TemplateTest extends TestCase {
 
 	public function test_empty_sections_are_left_out(): void {
 		$html = Template::issue( $this->issue( [ 'updates' => [], 'intro' => '' ] ) );
-		$this->assertStringNotContainsString( 'Software updates', $html );
-		$this->assertStringContainsString( 'This week on RivianTrackr', $html );
+		$this->assertStringNotContainsString( '>Software update</p>', $html );
+		$this->assertStringContainsString( '>Top story</p>', $html );
 	}
 
 	public function test_footer_has_address_lines(): void {
