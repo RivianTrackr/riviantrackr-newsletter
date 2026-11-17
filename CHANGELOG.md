@@ -4,6 +4,8 @@
 
 Deleting a draft frees its week, so "Build a draft now" works again right away. The draft window now follows the newest existing issue instead of a stored option.
 
+Claude's default guidelines: lead with the biggest news, not the newest story, and keep preview text to 80 characters or fewer.
+
 ## 0.2.0
 
 - Newsletter → Dashboard: subscribers, net signups, opens and clicks per issue from Brevo. A small widget on the WordPress dashboard.
