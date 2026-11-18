@@ -142,6 +142,37 @@ final class IssueBuilder {
 	 * Draft, scheduled or sent. A scheduled issue counts as sent once its
 	 * send time has passed.
 	 */
+	/**
+	 * Footer social links, in the same order as the site footer.
+	 *
+	 * @return array<int,array{name: string, url: string, icon: string}>
+	 */
+	public static function socials(): array {
+		$networks = [
+			'youtube'   => [ 'YouTube', 'https://www.youtube.com/@RivianTrackr' ],
+			'x'         => [ 'X', 'https://x.com/RivianTrackr' ],
+			'instagram' => [ 'Instagram', 'https://www.instagram.com/riviantrackr/' ],
+			'threads'   => [ 'Threads', 'https://www.threads.net/@RivianTrackr' ],
+			'bluesky'   => [ 'Bluesky', 'https://bsky.app/profile/riviantrackr.com' ],
+			'facebook'  => [ 'Facebook', 'https://facebook.com/RivianTrackr' ],
+			'linkedin'  => [ 'LinkedIn', 'https://www.linkedin.com/company/riviantrackr/' ],
+		];
+		$out      = [];
+		foreach ( $networks as $key => [ $name, $url ] ) {
+			$out[] = [
+				'name' => $name,
+				'url'  => $url,
+				'icon' => RTNL_URL . 'assets/social/' . $key . '.png',
+			];
+		}
+		/**
+		 * Filter the social links in the newsletter footer.
+		 *
+		 * @param array<int,array{name: string, url: string, icon: string}> $out Networks in display order.
+		 */
+		return (array) apply_filters( 'riviantrackr_newsletter_socials', $out );
+	}
+
 	public static function status( int $issue_id ): string {
 		$status = (string) get_post_meta( $issue_id, '_rtnl_status', true );
 		if ( 'scheduled' === $status && (int) get_post_meta( $issue_id, '_rtnl_scheduled_for', true ) <= time() ) {
@@ -299,6 +330,7 @@ final class IssueBuilder {
 			'stories'         => $parts['stories'],
 			'site_url'        => home_url( '/' ),
 			'logo_url'        => RTNL_URL . 'assets/logo.png',
+			'socials'         => self::socials(),
 			// Sign the intro with the first word of the from name ("Jose at RivianTrackr" → Jose).
 			'signature'       => (string) strtok( (string) $this->settings->get( 'sender_name' ), ' ' ),
 			'postal_address'  => (string) $this->settings->get( 'postal_address' ),

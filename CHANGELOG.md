@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+Social icons in the email footer (YouTube, X, Instagram, Threads, Bluesky, Facebook, LinkedIn), in the site footer's order. Gray PNGs that read in light and dark. Filter `riviantrackr_newsletter_socials` to change them.
+
 ## 0.3.1
 
 Fixed admin styles: a cut-off rule in admin.css stopped the dashboard table and the WordPress dashboard widget from being styled.
