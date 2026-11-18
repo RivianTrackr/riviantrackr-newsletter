@@ -127,7 +127,8 @@ final class Template {
 		$address = trim( (string) ( $d['postal_address'] ?? '' ) );
 		if ( '' !== (string) ( $d['signup_url'] ?? '' ) ) {
 			// Web version: invite the reader to subscribe instead of unsubscribe links.
-			$footer = '<p class="rtnl-m" style="margin:0 0 8px;">'
+			$footer = self::socials( (array) ( $d['socials'] ?? [] ) )
+				. '<p class="rtnl-m" style="margin:0 0 8px;">'
 				. '<a class="rtnl-a" href="' . esc_url( (string) $d['signup_url'] ) . '" style="color:' . $c['accent'] . ';text-decoration:underline;">'
 				/* translators: %s: newsletter name */
 				. esc_html( sprintf( __( 'Get %s in your inbox', 'riviantrackr-newsletter' ), (string) ( $d['name'] ?? '' ) ) ) . '</a></p>';
@@ -139,7 +140,8 @@ final class Template {
 				$footer
 			);
 		}
-		$footer = '<p class="rtnl-m" style="margin:0 0 8px;">' . esc_html( (string) ( $d['reason'] ?? '' ) ) . '</p>'
+		$footer = self::socials( (array) ( $d['socials'] ?? [] ) )
+			. '<p class="rtnl-m" style="margin:0 0 8px;">' . esc_html( (string) ( $d['reason'] ?? '' ) ) . '</p>'
 			. '<p class="rtnl-m" style="margin:0 0 8px;">'
 			. '<a class="rtnl-a" href="' . self::href( (string) ( $d['mirror_url'] ?? '' ) ) . '" style="color:' . $c['accent'] . ';text-decoration:underline;">' . esc_html__( 'View in browser', 'riviantrackr-newsletter' ) . '</a>'
 			. ' &nbsp;·&nbsp; '
@@ -187,6 +189,25 @@ final class Template {
 			return $url;
 		}
 		return esc_url( $url );
+	}
+
+	/**
+	 * A row of social icons for the footer.
+	 *
+	 * @param array<int,array{name: string, url: string, icon: string}> $socials Networks in display order.
+	 */
+	public static function socials( array $socials ): string {
+		if ( [] === $socials ) {
+			return '';
+		}
+		$cells = '';
+		foreach ( $socials as $i => $s ) {
+			$cells .= '<td style="padding:0 ' . ( $i < count( $socials ) - 1 ? '16px' : '0' ) . ' 0 0;">'
+				. '<a href="' . esc_url( (string) $s['url'] ) . '" style="text-decoration:none;">'
+				. '<img src="' . esc_url( (string) $s['icon'] ) . '" width="22" height="22" alt="' . esc_attr( (string) $s['name'] ) . '" style="display:block;width:22px;height:22px;border:0;">'
+				. '</a></td>';
+		}
+		return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr>' . $cells . '</tr></table>';
 	}
 
 	/**

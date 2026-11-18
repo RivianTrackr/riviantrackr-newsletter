@@ -51,6 +51,14 @@ final class TemplateTest extends TestCase {
 		$this->assertStringContainsString( 'src="https://riviantrackr.com/a-300x169.jpg" width="112"', $html );
 	}
 
+	public function test_footer_social_icons(): void {
+		$html = Template::issue( $this->issue( [ 'socials' => [ [ 'name' => 'YouTube', 'url' => 'https://www.youtube.com/@RivianTrackr', 'icon' => 'https://riviantrackr.com/yt.png' ], [ 'name' => 'X', 'url' => 'https://x.com/RivianTrackr', 'icon' => 'https://riviantrackr.com/x.png' ] ] ] ) );
+		$this->assertStringContainsString( 'href="https://www.youtube.com/@RivianTrackr"', $html );
+		$this->assertStringContainsString( 'alt="YouTube"', $html );
+		$this->assertSame( 2, substr_count( $html, 'width="22" height="22"' ) );
+		$this->assertSame( '', Template::socials( [] ) );
+	}
+
 	public function test_brevo_merge_tags_survive_escaping(): void {
 		$html = Template::issue( $this->issue() );
 		$this->assertStringContainsString( 'href="{{ unsubscribe }}"', $html );
