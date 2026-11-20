@@ -105,4 +105,11 @@ final class PureHelpersTest extends TestCase {
 		$this->assertSame( [ 'overview', 'security', 'newsletter', 'data' ], array_column( $out, 'id' ) );
 		$this->assertSame( [ 'a', 'newsletter' ], array_column( AccountTab::insert_before( [ [ 'id' => 'a' ] ], [ 'id' => 'newsletter' ], 'data' ), 'id' ) );
 	}
+
+	public function test_sidebar_count_line(): void {
+		$this->assertSame( '', \RivianTrackr\Newsletter\SignupForm::count_line( null ) );
+		$this->assertSame( '', \RivianTrackr\Newsletter\SignupForm::count_line( 49 ) );
+		$this->assertSame( 'Join 376 readers.', \RivianTrackr\Newsletter\SignupForm::count_line( 376 ) );
+		$this->assertSame( 'Join 1,204 readers.', \RivianTrackr\Newsletter\SignupForm::count_line( 1204 ) );
+	}
 }

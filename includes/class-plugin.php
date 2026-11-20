@@ -20,10 +20,10 @@ final class Plugin {
 		$brevo         = new Brevo( $settings );
 		$builder       = new IssueBuilder( $settings );
 		$subscriptions = new Subscriptions( $settings, $brevo, Tokens::from_wp() );
-		$form          = new SignupForm( $settings, $subscriptions );
+		$stats         = new Stats( $settings, $brevo );
+		$form          = new SignupForm( $settings, $subscriptions, $stats );
 		$invites       = new Invites( $settings, $subscriptions );
 		$writer        = new Writer( $settings, $builder );
-		$stats         = new Stats( $settings, $brevo );
 
 		add_action( 'init', [ IssueBuilder::class, 'register_post_type' ] );
 		add_action( 'init', [ Installer::class, 'maybe_flush_rewrites' ], 20 );

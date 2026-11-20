@@ -21,7 +21,22 @@ final class SignupForm {
 
 	public const SHORTCODE = 'riviantrackr_newsletter';
 
-	public function __construct( private Settings $settings, private Subscriptions $subscriptions ) {}
+	/** Below this many subscribers the sidebar card doesn't show a count. */
+	public const MIN_COUNT = 50;
+
+	public function __construct( private Settings $settings, private Subscriptions $subscriptions, private ?Stats $stats = null ) {}
+
+	/**
+	 * "Join 376 readers." once the list is big enough to be worth showing,
+	 * otherwise empty. Pure, for tests.
+	 */
+	public static function count_line( ?int $count ): string {
+		if ( null === $count || $count < self::MIN_COUNT ) {
+			return '';
+		}
+		/* translators: %s: subscriber count */
+		return sprintf( _n( 'Join %s reader.', 'Join %s readers.', $count, 'riviantrackr-newsletter' ), number_format_i18n( $count ) );
+	}
 
 	public function register_hooks(): void {
 		add_shortcode( self::SHORTCODE, [ $this, 'render' ] );
@@ -122,7 +137,8 @@ final class SignupForm {
 				return $this->render_sidebar_subscribed( $page );
 			}
 		}
-		$id = wp_unique_id( 'rtnl-email-' );
+		$id    = wp_unique_id( 'rtnl-email-' );
+		$count = self::count_line( $this->stats ? $this->stats->subscribers() : null );
 
 		ob_start();
 		?>
@@ -135,6 +151,9 @@ final class SignupForm {
 				<div class="rtnl-signup__member" data-rtnl-member data-subscribed="0">
 					<button type="button" class="rtnl-btn" data-rtnl-toggle data-rtnl-state="0"><?php esc_html_e( 'Subscribe', 'riviantrackr-newsletter' ); ?></button>
 				</div>
+				<?php if ( '' !== $count ) : ?>
+					<p class="rtnl-signup__fine"><?php echo esc_html( $count ); ?></p>
+				<?php endif; ?>
 			<?php else : ?>
 				<form class="rtnl-signup__form" data-rtnl-panel="form" data-rtnl-form novalidate>
 					<label class="rtnl-sr" for="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
@@ -142,7 +161,7 @@ final class SignupForm {
 					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
 					<button type="submit" class="rtnl-btn"><?php esc_html_e( 'Sign me up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
-				<p class="rtnl-signup__fine" data-rtnl-panel="form"><?php esc_html_e( 'Free. Unsubscribe any time.', 'riviantrackr-newsletter' ); ?></p>
+				<p class="rtnl-signup__fine" data-rtnl-panel="form"><?php echo esc_html( trim( $count . ' ' . __( 'Free, unsubscribe any time.', 'riviantrackr-newsletter' ) ) ); ?></p>
 			<?php endif; ?>
 
 			<?php if ( '' !== $page && IssueBuilder::has_published() ) : ?>

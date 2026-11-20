@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+Sidebar card shows the subscriber count ("Join 376 readers.") once the list has 50 or more. The count comes from Brevo, cached for an hour.
+
 ## 0.3.2
 
 Social icons in the email footer (YouTube, X, Instagram, Threads, Bluesky, Facebook, LinkedIn), in the site footer's order. Gray PNGs that read in light and dark. Filter `riviantrackr_newsletter_socials` to change them.
