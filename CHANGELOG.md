@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+The live subscriber count ("Join 376 readers.") also shows in the signup form's fine print on the newsletter page and anywhere else the signup box is used.
+
 ## 0.3.3
 
 Sidebar card shows the subscriber count ("Join 376 readers.") once the list has 50 or more. It's live: the card asks a public `GET /count` endpoint on every page load (Brevo list size, cached a minute on the server, `no-store` for browsers and Cloudflare), and the cache clears whenever someone subscribes or unsubscribes on the site.
