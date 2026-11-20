@@ -97,6 +97,7 @@ final class SignupForm {
 					<button type="submit" class="rtnl-btn"><?php echo $is_page ? esc_html__( 'Sign me up', 'riviantrackr-newsletter' ) : esc_html__( 'Sign up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
 				<p class="rtnl-signup__fine" data-rtnl-panel="form">
+					<span data-rtnl-count><?php echo esc_html( self::count_line( $this->stats ? $this->stats->subscribers( Stats::LIVE_TTL ) : null ) ); ?></span>
 					<?php esc_html_e( 'We’ll send a confirmation link first. We never share your email, and you can unsubscribe any time.', 'riviantrackr-newsletter' ); ?>
 					<?php if ( '' !== get_privacy_policy_url() ) : ?>
 						<a class="rtnl-signup__link" href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Privacy policy', 'riviantrackr-newsletter' ); ?></a>
