@@ -114,7 +114,7 @@
 					return;
 				}
 				busy( button, true );
-				post( '/subscribe', { email: email, website: form.elements.website.value } ).then( function () {
+				post( '/subscribe', { email: email, website: form.elements.website.value, placement: form.elements.placement ? form.elements.placement.value : '' } ).then( function () {
 					panels( 'none' );
 					say( text( 'sent' ) );
 				} ).catch( function ( err ) {
