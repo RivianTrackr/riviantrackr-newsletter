@@ -65,9 +65,18 @@ final class Stats {
 	 * @return array{in: int, out: int}
 	 */
 	public function signups( int $days ): array {
+		return $this->signups_since( time() - $days * DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Opt-ins and opt-outs on the site since a timestamp.
+	 *
+	 * @return array{in: int, out: int}
+	 */
+	public function signups_since( int $since ): array {
 		global $wpdb;
 		$table = Installer::table();
-		$since = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
+		$since = gmdate( 'Y-m-d H:i:s', $since );
 		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT action, COUNT(*) AS n FROM {$table} WHERE created_at >= %s GROUP BY action", $since ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
 		$out   = [
 			'in'  => 0,
@@ -92,7 +101,7 @@ final class Stats {
 		if ( $campaign_id <= 0 ) {
 			return null;
 		}
-		$key    = 'rtnl_cs2_' . $campaign_id;
+		$key    = 'rtnl_cs3_' . $campaign_id;
 		$cached = get_transient( $key );
 		if ( is_array( $cached ) ) {
 			return $cached;
@@ -107,14 +116,20 @@ final class Stats {
 	}
 
 	/**
+	 * Opens leave out Apple Mail Privacy Protection, which preloads every
+	 * email and so counts as an open for every Apple Mail reader. Brevo
+	 * reports those opens as trackableViews. opens_all keeps the raw count.
+	 *
 	 * @param array<string,mixed> $totals Brevo globalStats.
-	 * @return array{sent: int, delivered: int, opens: int, clicks: int, unsubscribes: int, bounces: int, complaints: int}
+	 * @return array{sent: int, delivered: int, opens: int, opens_all: int, clicks: int, unsubscribes: int, bounces: int, complaints: int}
 	 */
 	public static function from_brevo( array $totals ): array {
+		$all = (int) ( $totals['uniqueViews'] ?? 0 );
 		return [
 			'sent'         => (int) ( $totals['sent'] ?? 0 ),
 			'delivered'    => (int) ( $totals['delivered'] ?? 0 ),
-			'opens'        => (int) ( $totals['uniqueViews'] ?? 0 ),
+			'opens'        => isset( $totals['trackableViews'] ) ? min( $all, (int) $totals['trackableViews'] ) : max( 0, $all - (int) ( $totals['appleMppOpens'] ?? 0 ) ),
+			'opens_all'    => $all,
 			'clicks'       => (int) ( $totals['uniqueClicks'] ?? 0 ),
 			'unsubscribes' => (int) ( $totals['unsubscriptions'] ?? 0 ),
 			'bounces'      => (int) ( $totals['hardBounces'] ?? 0 ) + (int) ( $totals['softBounces'] ?? 0 ),
@@ -123,16 +138,16 @@ final class Stats {
 	}
 
 	/**
-	 * Opt-ins and opt-outs on the site in the last N days, by where they
-	 * happened (form, account, invite).
+	 * Readers who joined and left on the site since launch, by where it
+	 * happened (form placement, account, invite). Each address counts once
+	 * per source.
 	 *
 	 * @return array<string,array{in: int, out: int}>
 	 */
-	public function by_source( int $days ): array {
+	public function by_source(): array {
 		global $wpdb;
 		$table = Installer::table();
-		$since = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
-		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT source, action, COUNT(*) AS n FROM {$table} WHERE created_at >= %s GROUP BY source, action", $since ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+		$rows  = $wpdb->get_results( "SELECT source, action, COUNT(DISTINCT email) AS n FROM {$table} WHERE action IN ('subscribe','unsubscribe') GROUP BY source, action", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
 		$out   = [];
 		foreach ( (array) $rows as $row ) {
 			$source                  = (string) $row['source'];
@@ -145,6 +160,55 @@ final class Stats {
 		}
 		ksort( $out );
 		return $out;
+	}
+
+	/**
+	 * Opt-ins per local day for the last N days, oldest first, today last.
+	 *
+	 * @return array<string,int> Y-m-d => count.
+	 */
+	public function daily( int $days ): array {
+		global $wpdb;
+		$table = Installer::table();
+		$since = gmdate( 'Y-m-d H:i:s', time() - ( $days + 1 ) * DAY_IN_SECONDS );
+		$times = $wpdb->get_col( $wpdb->prepare( "SELECT created_at FROM {$table} WHERE action = 'subscribe' AND created_at >= %s", $since ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+		$stamps = array_map( static fn( $t ): int => (int) strtotime( $t . ' UTC' ), (array) $times );
+		return self::per_day( $stamps, $days, Schedule::now() );
+	}
+
+	/**
+	 * Buckets timestamps into the $days local days ending today. Pure, for tests.
+	 *
+	 * @param int[] $stamps Unix timestamps.
+	 * @return array<string,int> Y-m-d => count, oldest first.
+	 */
+	public static function per_day( array $stamps, int $days, \DateTimeImmutable $today ): array {
+		$out = [];
+		for ( $i = $days - 1; $i >= 0; $i-- ) {
+			$out[ $today->modify( '-' . $i . ' days' )->format( 'Y-m-d' ) ] = 0;
+		}
+		$tz = $today->getTimezone();
+		foreach ( $stamps as $ts ) {
+			$day = ( new \DateTimeImmutable( '@' . $ts ) )->setTimezone( $tz )->format( 'Y-m-d' );
+			if ( isset( $out[ $day ] ) ) {
+				++$out[ $day ];
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Signup form requests whose confirmation link hasn't been used yet and
+	 * hasn't expired. Null until the first request is logged.
+	 */
+	public function pending(): ?int {
+		global $wpdb;
+		$table = Installer::table();
+		if ( null === $wpdb->get_var( "SELECT id FROM {$table} WHERE action = 'request' LIMIT 1" ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+			return null;
+		}
+		$since = gmdate( 'Y-m-d H:i:s', time() - Subscriptions::CONFIRM_TTL );
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT r.email) FROM {$table} r WHERE r.action = 'request' AND r.created_at >= %s AND NOT EXISTS ( SELECT 1 FROM {$table} s WHERE s.email = r.email AND s.action = 'subscribe' AND s.created_at >= r.created_at )", $since ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
 	}
 
 	/**

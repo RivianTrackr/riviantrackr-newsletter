@@ -28,6 +28,9 @@ final class Subscriptions {
 
 	public const STATUS_CACHE = 'rtnl_status_';
 
+	/** Where the signup form sits, logged as the source of the signup. */
+	public const PLACEMENTS = [ 'page', 'sidebar', 'box' ];
+
 	public function __construct(
 		private Settings $settings,
 		private Brevo $brevo,
@@ -85,7 +88,7 @@ final class Subscriptions {
 		if ( '' !== trim( (string) $request->get_param( 'website' ) ) ) {
 			return new \WP_REST_Response( [ 'ok' => true ] );
 		}
-		$result = $this->request_signup( (string) $request->get_param( 'email' ), self::client_ip() );
+		$result = $this->request_signup( (string) $request->get_param( 'email' ), self::client_ip(), (string) $request->get_param( 'placement' ) );
 		return is_wp_error( $result ) ? $result : new \WP_REST_Response( [ 'ok' => true ] );
 	}
 
@@ -125,9 +128,10 @@ final class Subscriptions {
 
 	/**
 	 * Signup form: rate-limit, then email a confirm link. Says the same thing
-	 * whether or not the address is already on the list.
+	 * whether or not the address is already on the list. The request is
+	 * logged so the dashboard can count links not yet confirmed.
 	 */
-	public function request_signup( string $email, string $ip ): bool|\WP_Error {
+	public function request_signup( string $email, string $ip, string $placement = '' ): bool|\WP_Error {
 		$email = sanitize_email( $email );
 		if ( ! is_email( $email ) ) {
 			return new \WP_Error( 'rtnl_email', __( 'Enter a valid email address.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
@@ -141,7 +145,14 @@ final class Subscriptions {
 
 		$link = add_query_arg(
 			'rtnl_confirm',
-			$this->tokens->make( [ 'e' => strtolower( $email ) ], self::CONFIRM_TTL, time() ),
+			$this->tokens->make(
+				[
+					'e' => strtolower( $email ),
+					's' => self::form_source( $placement ),
+				],
+				self::CONFIRM_TTL,
+				time()
+			),
 			$this->settings->page_url()
 		);
 		$name = (string) $this->settings->get( 'name' );
@@ -159,6 +170,10 @@ final class Subscriptions {
 				'footnote' => __( 'Didn’t sign up? Ignore this email and you won’t hear from us.', 'riviantrackr-newsletter' ),
 			]
 		);
+		if ( $sent ) {
+			self::log( $email, 0, 'request', self::form_source( $placement ), $ip );
+			self::forget_requests();
+		}
 		return $sent ? true : new \WP_Error( 'rtnl_mail', __( 'We couldn’t send the confirmation email. Please try again.', 'riviantrackr-newsletter' ), [ 'status' => 500 ] );
 	}
 
@@ -171,7 +186,7 @@ final class Subscriptions {
 			return new \WP_Error( 'rtnl_token', __( 'This link has expired or isn’t valid. Sign up again below.', 'riviantrackr-newsletter' ), [ 'status' => 400 ] );
 		}
 		if ( isset( $data['e'] ) ) {
-			return $this->subscribe( (string) $data['e'], 'form', 0, $ip );
+			return $this->subscribe( (string) $data['e'], self::form_source( (string) ( $data['s'] ?? '' ) ), 0, $ip );
 		}
 		$user = isset( $data['u'] ) ? get_userdata( (int) $data['u'] ) : false;
 		if ( ! $user instanceof \WP_User || ! hash_equals( (string) ( $data['m'] ?? '' ), self::hash( strtolower( $user->user_email ) ) ) ) {
@@ -262,6 +277,25 @@ final class Subscriptions {
 			],
 			[ '%s', '%d', '%s', '%s', '%s', '%s' ]
 		);
+	}
+
+	/**
+	 * The logged source for a signup form placement: form_page, form_sidebar
+	 * or form_box. Older links and unknown values log plain form. Pure, for tests.
+	 */
+	public static function form_source( string $placement ): string {
+		$placement = str_starts_with( $placement, 'form_' ) ? substr( $placement, 5 ) : $placement;
+		return in_array( $placement, self::PLACEMENTS, true ) ? 'form_' . $placement : 'form';
+	}
+
+	/**
+	 * Unconfirmed requests are only needed while their link works, so rows
+	 * older than 30 days are removed. Confirmed signups keep their own row.
+	 */
+	private static function forget_requests(): void {
+		global $wpdb;
+		$table = Installer::table();
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE action = 'request' AND created_at < %s", gmdate( 'Y-m-d H:i:s', time() - 30 * DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
 	}
 
 	public static function hash( string $value ): string {

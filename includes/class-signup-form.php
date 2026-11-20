@@ -94,6 +94,7 @@ final class SignupForm {
 					<label class="<?php echo $is_page ? 'rtnl-signup__label' : 'rtnl-sr'; ?>" for="rtnl-email"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
 					<input class="rtnl-signup__input" id="rtnl-email" type="email" name="email" autocomplete="email" placeholder="<?php esc_attr_e( 'you@example.com', 'riviantrackr-newsletter' ); ?>" required>
 					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
+					<input type="hidden" name="placement" value="<?php echo esc_attr( $is_page || ( (int) $this->settings->get( 'page_id' ) > 0 && is_page( (int) $this->settings->get( 'page_id' ) ) ) ? 'page' : 'box' ); ?>">
 					<button type="submit" class="rtnl-btn"><?php echo $is_page ? esc_html__( 'Sign me up', 'riviantrackr-newsletter' ) : esc_html__( 'Sign up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
 				<p class="rtnl-signup__fine" data-rtnl-panel="form">
@@ -158,6 +159,7 @@ final class SignupForm {
 					<label class="rtnl-sr" for="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
 					<input class="rtnl-signup__input" id="<?php echo esc_attr( $id ); ?>" type="email" name="email" autocomplete="email" placeholder="<?php esc_attr_e( 'you@example.com', 'riviantrackr-newsletter' ); ?>" required>
 					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
+					<input type="hidden" name="placement" value="sidebar">
 					<button type="submit" class="rtnl-btn"><?php esc_html_e( 'Sign me up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
 				<p class="rtnl-signup__fine" data-rtnl-panel="form"><span data-rtnl-count><?php echo esc_html( $count ); ?></span> <?php esc_html_e( 'Free, unsubscribe any time.', 'riviantrackr-newsletter' ); ?></p>

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0
+
+Newsletter dashboard rework.
+
+- Next issue card: send date, whether the draft is waiting, scheduled or still to be built, and how many stories are in so far.
+- Top stats: subscribers with today's change, joined and left in the last 7 days, and last issue opens and clicks.
+- Opens leave out Apple Mail preloads (Brevo `trackableViews`), which count every Apple Mail reader as an open. The raw number shows next to it.
+- Signups by day chart for the last 30 days.
+- Last issue card with delivered, opened, clicked, unsubscribed, bounced or spam.
+- Most clicked links show the story title.
+- Where readers came from, since launch: newsletter page, sidebar, signup box elsewhere, member invite, account page, and how many confirmation links are waiting. Form placement and confirmation requests are logged from this version on. Unconfirmed requests are deleted after 30 days.
+- Admin screens move from the blue admin palette to paper and ink: gold fills, brass links, warm lines, sentence case labels.
+
 ## 0.3.4
 
 The live subscriber count ("Join 376 readers.") also shows in the signup form's fine print on the newsletter page and anywhere else the signup box is used.

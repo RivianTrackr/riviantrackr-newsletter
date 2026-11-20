@@ -39,7 +39,7 @@ final class Plugin {
 		if ( is_admin() ) {
 			( new IssueAdmin( $settings, $builder, $brevo, $writer ) )->register_hooks();
 			( new SettingsPage( $settings, $brevo, $builder, $invites ) )->register_hooks();
-			( new DashboardPage( $settings, $stats ) )->register_hooks();
+			( new DashboardPage( $settings, $stats, $builder ) )->register_hooks();
 		}
 	}
 }
