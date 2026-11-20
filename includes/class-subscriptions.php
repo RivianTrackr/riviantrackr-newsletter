@@ -50,6 +50,15 @@ final class Subscriptions {
 		);
 		register_rest_route(
 			RTNL_REST_NAMESPACE,
+			'/count',
+			[
+				'methods'             => 'GET',
+				'permission_callback' => '__return_true',
+				'callback'            => [ $this, 'rest_count' ],
+			]
+		);
+		register_rest_route(
+			RTNL_REST_NAMESPACE,
 			'/accept',
 			[
 				'methods'             => 'POST',
@@ -78,6 +87,23 @@ final class Subscriptions {
 		}
 		$result = $this->request_signup( (string) $request->get_param( 'email' ), self::client_ip() );
 		return is_wp_error( $result ) ? $result : new \WP_REST_Response( [ 'ok' => true ] );
+	}
+
+	/**
+	 * GET /count: the live subscriber count for the sidebar card. Cached a
+	 * minute on the server so page views never hit Brevo more than once a
+	 * minute, and never cached by the browser or Cloudflare.
+	 */
+	public function rest_count(): \WP_REST_Response {
+		$count    = ( new Stats( $this->settings, $this->brevo ) )->subscribers( Stats::LIVE_TTL );
+		$response = new \WP_REST_Response(
+			[
+				'count' => $count,
+				'text'  => SignupForm::count_line( $count ),
+			]
+		);
+		$response->header( 'Cache-Control', 'no-store, max-age=0' );
+		return $response;
 	}
 
 	public function rest_accept( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
@@ -172,6 +198,7 @@ final class Subscriptions {
 			return self::public_error( $done );
 		}
 		self::log( $email, $user_id, 'subscribe', $source, $ip );
+		Stats::forget_count( (int) $this->settings->get( 'list_id' ) );
 		if ( $user_id > 0 ) {
 			set_transient( self::STATUS_CACHE . $user_id, '1', 12 * HOUR_IN_SECONDS );
 		}
@@ -184,6 +211,7 @@ final class Subscriptions {
 			return self::public_error( $done );
 		}
 		self::log( $email, $user_id, 'unsubscribe', $source, $ip );
+		Stats::forget_count( (int) $this->settings->get( 'list_id' ) );
 		if ( $user_id > 0 ) {
 			set_transient( self::STATUS_CACHE . $user_id, '0', 12 * HOUR_IN_SECONDS );
 		}

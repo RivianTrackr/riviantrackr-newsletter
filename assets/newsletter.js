@@ -27,6 +27,28 @@
 		} );
 	}
 
+	// Live subscriber count. Cached pages carry the number from when they
+	// were cached, so ask the server for the current one on every load.
+	function refreshCount() {
+		var spots = document.querySelectorAll( '[data-rtnl-count]' );
+		if ( ! spots.length || ! config.restUrl ) {
+			return;
+		}
+		fetch( config.restUrl + '/count', { credentials: 'omit', cache: 'no-store' } )
+			.then( function ( res ) {
+				return res.ok ? res.json() : null;
+			} )
+			.then( function ( data ) {
+				if ( ! data || typeof data.text !== 'string' ) {
+					return;
+				}
+				spots.forEach( function ( el ) {
+					el.textContent = data.text;
+				} );
+			} )
+			.catch( function () {} );
+	}
+
 	function setup( root ) {
 		var msg = root.querySelector( '[data-rtnl-msg]' );
 
@@ -115,6 +137,7 @@
 							el.hidden = el.getAttribute( 'data-rtnl-state' ) !== ( want ? '1' : '0' );
 						} );
 						say( text( want ? 'accepted' : 'unsubscribed' ) );
+						refreshCount();
 					} ).catch( function ( err ) {
 						busy( button, false );
 						say( err.message, true );
@@ -126,6 +149,7 @@
 
 	function init() {
 		document.querySelectorAll( '[data-rtnl-signup]' ).forEach( setup );
+		refreshCount();
 	}
 
 	if ( document.readyState === 'loading' ) {

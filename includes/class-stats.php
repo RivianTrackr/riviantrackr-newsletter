@@ -18,12 +18,19 @@ final class Stats {
 
 	public function __construct( private Settings $settings, private Brevo $brevo ) {}
 
-	public function subscribers(): ?int {
+	/** How long the public subscriber count is cached, in seconds. */
+	public const LIVE_TTL = MINUTE_IN_SECONDS;
+
+	/**
+	 * Subscribers on the Brevo list. Cached for $ttl seconds (an hour by
+	 * default, a minute for the public count).
+	 */
+	public function subscribers( int $ttl = self::CACHE ): ?int {
 		$list_id = (int) $this->settings->get( 'list_id' );
 		if ( $list_id <= 0 ) {
 			return null;
 		}
-		$key    = 'rtnl_subs_' . $list_id;
+		$key    = self::count_key( $list_id, $ttl );
 		$cached = get_transient( $key );
 		if ( false !== $cached ) {
 			return (int) $cached;
@@ -33,8 +40,21 @@ final class Stats {
 			return null;
 		}
 		$count = (int) ( $list['uniqueSubscribers'] ?? $list['totalSubscribers'] ?? 0 );
-		set_transient( $key, $count, self::CACHE );
+		set_transient( $key, $count, $ttl );
 		return $count;
+	}
+
+	public static function count_key( int $list_id, int $ttl ): string {
+		return ( self::LIVE_TTL === $ttl ? 'rtnl_subs_live_' : 'rtnl_subs_' ) . $list_id;
+	}
+
+	/**
+	 * Drop the cached counts so the next request asks Brevo, after someone
+	 * subscribes or unsubscribes on the site.
+	 */
+	public static function forget_count( int $list_id ): void {
+		delete_transient( self::count_key( $list_id, self::LIVE_TTL ) );
+		delete_transient( self::count_key( $list_id, self::CACHE ) );
 	}
 
 	/**

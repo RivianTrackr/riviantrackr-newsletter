@@ -95,3 +95,6 @@ if ( ! class_exists( 'WP_Error' ) ) {
 		}
 	}
 }
+function number_format_i18n( $n, $d = 0 ) {
+	return number_format( (float) $n, $d );
+}
