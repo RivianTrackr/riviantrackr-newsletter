@@ -138,7 +138,7 @@ final class SignupForm {
 			}
 		}
 		$id    = wp_unique_id( 'rtnl-email-' );
-		$count = self::count_line( $this->stats ? $this->stats->subscribers() : null );
+		$count = self::count_line( $this->stats ? $this->stats->subscribers( Stats::LIVE_TTL ) : null );
 
 		ob_start();
 		?>
@@ -151,9 +151,7 @@ final class SignupForm {
 				<div class="rtnl-signup__member" data-rtnl-member data-subscribed="0">
 					<button type="button" class="rtnl-btn" data-rtnl-toggle data-rtnl-state="0"><?php esc_html_e( 'Subscribe', 'riviantrackr-newsletter' ); ?></button>
 				</div>
-				<?php if ( '' !== $count ) : ?>
-					<p class="rtnl-signup__fine"><?php echo esc_html( $count ); ?></p>
-				<?php endif; ?>
+				<p class="rtnl-signup__fine"><span data-rtnl-count><?php echo esc_html( $count ); ?></span></p>
 			<?php else : ?>
 				<form class="rtnl-signup__form" data-rtnl-panel="form" data-rtnl-form novalidate>
 					<label class="rtnl-sr" for="<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Email address', 'riviantrackr-newsletter' ); ?></label>
@@ -161,7 +159,7 @@ final class SignupForm {
 					<span class="rtnl-hp" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></span>
 					<button type="submit" class="rtnl-btn"><?php esc_html_e( 'Sign me up', 'riviantrackr-newsletter' ); ?></button>
 				</form>
-				<p class="rtnl-signup__fine" data-rtnl-panel="form"><?php echo esc_html( trim( $count . ' ' . __( 'Free, unsubscribe any time.', 'riviantrackr-newsletter' ) ) ); ?></p>
+				<p class="rtnl-signup__fine" data-rtnl-panel="form"><span data-rtnl-count><?php echo esc_html( $count ); ?></span> <?php esc_html_e( 'Free, unsubscribe any time.', 'riviantrackr-newsletter' ); ?></p>
 			<?php endif; ?>
 
 			<?php if ( '' !== $page && IssueBuilder::has_published() ) : ?>

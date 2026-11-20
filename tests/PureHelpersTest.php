@@ -112,4 +112,9 @@ final class PureHelpersTest extends TestCase {
 		$this->assertSame( 'Join 376 readers.', \RivianTrackr\Newsletter\SignupForm::count_line( 376 ) );
 		$this->assertSame( 'Join 1,204 readers.', \RivianTrackr\Newsletter\SignupForm::count_line( 1204 ) );
 	}
+
+	public function test_live_and_hourly_counts_use_separate_cache_keys(): void {
+		$this->assertSame( 'rtnl_subs_live_3', \RivianTrackr\Newsletter\Stats::count_key( 3, \RivianTrackr\Newsletter\Stats::LIVE_TTL ) );
+		$this->assertSame( 'rtnl_subs_3', \RivianTrackr\Newsletter\Stats::count_key( 3, HOUR_IN_SECONDS ) );
+	}
 }
