@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+The subscriber count endpoint (`/wp-json/riviantrackr-newsletter/v1/count`) lets Cloudflare cache it for 5 minutes (`s-maxage=300`) instead of `no-store`. It was reaching the server about 7,850 times a day for one site-wide number. Browsers still fetch it fresh, so a new signup shows within 5 minutes. Takes effect once the path is in the Cloudflare cache rule.
+
 ## 0.4.0
 
 Newsletter dashboard rework.
