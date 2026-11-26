@@ -95,7 +95,8 @@ final class Subscriptions {
 	/**
 	 * GET /count: the live subscriber count for the sidebar card. Cached a
 	 * minute on the server so page views never hit Brevo more than once a
-	 * minute, and never cached by the browser or Cloudflare.
+	 * minute. Cloudflare may keep it 5 minutes (s-maxage, needs the path in
+	 * the "Cache busiest API endpoint" cache rule); browsers never keep it.
 	 */
 	public function rest_count(): \WP_REST_Response {
 		$count    = ( new Stats( $this->settings, $this->brevo ) )->subscribers( Stats::LIVE_TTL );
@@ -105,7 +106,7 @@ final class Subscriptions {
 				'text'  => SignupForm::count_line( $count ),
 			]
 		);
-		$response->header( 'Cache-Control', 'no-store, max-age=0' );
+		$response->header( 'Cache-Control', 'public, max-age=0, s-maxage=300' );
 		return $response;
 	}
 
